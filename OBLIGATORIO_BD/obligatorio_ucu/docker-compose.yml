@@ -1,0 +1,32 @@
+services:
+  db:
+    image: mysql:8.0
+    container_name: ucu_mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: ucu_salas
+      TZ: America/Montevideo
+    volumes:
+      - ./db/tablas.sql:/docker-entrypoint-initdb.d/01_schema.sql:ro
+      - ./db/triggers.sql:/docker-entrypoint-initdb.d/02_triggers.sql:ro
+      - ./db/Insert.sql:/docker-entrypoint-initdb.d/03_seed.sql:ro
+
+  app:
+    image: python:3.11-slim
+    container_name: ucu_app
+    working_dir: /app
+    depends_on:
+      - db
+    environment:
+      MYSQL_HOST: db
+      MYSQL_PORT: 3306
+      MYSQL_USER: root
+      MYSQL_PASSWORD: root
+      MYSQL_DATABASE: ucu_salas
+      TZ: America/Montevideo
+    volumes:
+      - ./app:/app
+    command: bash -lc "pip install mysql-connector-python && python main.py"
+    stdin_open: true
+    tty: true
