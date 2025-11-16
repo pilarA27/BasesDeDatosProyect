@@ -65,12 +65,72 @@ def cancelar_reserva(id_reserva):
 def listar_reservas():
     return
 
+#ver temas de seguridad por las dudas
 def registrar_asistencia(id_reserva, ci):
-    return
+    sql = """
+        UPDATE reserva_alumno
+        SET asistencia = 1, checkin_ts = CURRENT_TIMESTAMP
+        WHERE id_reserva = %s AND ci_alumno = %s
+    """
+    return run_query(sql, (id_reserva, ci))
+
+from datetime import datetime, timedelta
 
 def cerrar_reserva(id_reserva):
-    return
+    #Se verifica si hubo asistencia
+    sql_asistencia = """
+        SELECT SUM(asistencia) AS total_asistencias
+        FROM reserva_alumno
+        WHERE id_reserva = %s
+    """
+    resultado = run_query(sql_asistencia, (id_reserva,), fetch=True)
+    asistencias = resultado[0]["total_asistencias"] or 0
+
+    if asistencias > 0:
+        nuevo_estado = "finalizada"
+    else:
+        nuevo_estado = "sin_asistencia"
+
+    sql_update_reserva = """
+        UPDATE reserva
+        SET estado = %s
+        WHERE id_reserva = %s
+    """
+    run_query(sql_update_reserva, (nuevo_estado, id_reserva))
+
+    #Se genera la sanción si nadie asiste a la reserva
+    if asistencias == 0:
+        sql_participantes = """
+            SELECT ci_alumno
+            FROM reserva_alumno
+            WHERE id_reserva = %s
+        """
+        participantes = run_query(sql_participantes, (id_reserva,), fetch=True)
+
+        #2 meses de sanción para los participantes (por letra)
+        hoy = datetime.today().date()
+        fin_sancion = hoy + timedelta(days=60)
+
+        for p in participantes:
+            ci = p["ci_alumno"]
+            sql_insert_sancion = """
+                INSERT INTO sancion_alumno (ci_alumno, fecha_inicio, fecha_fin, motivo, id_reserva)
+                VALUES (%s, %s, %s, %s, %s)
+            """
+            motivo = "No asiste a una reserva"
+            run_query(sql_insert_sancion, (ci, hoy, fin_sancion, motivo, id_reserva))
+
+    return True
+
+
 
 #SANCIONES
 def listar_sanciones():
-    return
+    sql = """
+        SELECT s.id_sancion, s.ci_alumno, s.fecha_inicio, s.fecha_fin, s.motivo, a.nombre, a.apellido
+        FROM sancion_alumno s
+        JOIN alumno a ON a.ci = s.ci_alumno
+        ORDER BY s.fecha_inicio DESC
+    """
+    return run_query(sql, fetch=True)
+
