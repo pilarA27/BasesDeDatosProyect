@@ -31,16 +31,26 @@ def eliminar_alumno(ci):
 
 #SALA
 def alta_sala(nombre_sala, id_edificio, capacidad, tipo_sala):
-    return
+    sql = """INSERT INTO sala (nombre_sala, id_edificio, capacidad, tipo_sala)
+        VALUES (%s, %s, %s, %s)"""
+    return run_query(sql, (nombre_sala, id_edificio, capacidad, tipo_sala))
 
 def listar_salas():
-    return
+    sql = """SELECT s.id_sala, s.nombre_sala, s.capacidad, s.tipo_sala, e.nombre_edificio AS edificio
+        FROM sala s
+        JOIN edificio e ON s.id_edificio = e.id_edificio
+        ORDER BY e.nombre_edificio, s.nombre_sala"""
+    return run_query(sql, fetch=True)
 
 def modificar_sala(id_sala, nombre_sala, id_edificio, capacidad, tipo_sala):
-    return
+    sql = """UPDATE sala 
+        SET nombre_sala = %s, id_edificio = %s, capacidad = %s, tipo_sala = %s
+        WHERE id_sala = %s"""
+    return run_query(sql, (nombre_sala, id_edificio, capacidad, tipo_sala, id_sala))
 
 def eliminar_sala(id_sala):
-    return
+    sql = "DELETE FROM sala WHERE id_sala = %s"
+    return run_query(sql, (id_sala,))
 
 #RESERVA
 def crear_reserva(id_sala, fecha, id_turno, creado_por):
