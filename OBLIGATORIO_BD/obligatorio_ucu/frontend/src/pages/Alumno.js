@@ -39,11 +39,11 @@ export default function Alumno() {
       )}
 
       <div className="button-box">
-        <button /** crear_reserva */>
+        <button /** crear_reserva: Se le pasa id_sala, fecha, id_turno, creado_por y se crea un id_reserva */>
           Reservar sala
         </button>
 
-         <button /** cancelar_reserva */>
+         <button /** cancelar_reserva: Se borra el id_reserva */>
           Cancelar reserva
         </button>
 

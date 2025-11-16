@@ -50,7 +50,7 @@ export default function Administrador() {
           Ver todas
         </button>
 
-        <button /** registrar_asistencia */>
+        <button /** registrar_asistencia : Si vino alumno no hay sancion, si falta se le pone sancion*/>
           Confirmar asistencia
         </button>
       </div>
