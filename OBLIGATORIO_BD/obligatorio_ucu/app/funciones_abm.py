@@ -54,16 +54,28 @@ def eliminar_sala(id_sala):
 
 #RESERVA
 def crear_reserva(id_sala, fecha, id_turno, creado_por):
-    return
+    sql = """INSERT INTO reserva (id_sala, fecha, id_turno, creado_por)
+            VALUES (%s, %s, %s, %s)"""
+    return run_query(sql, (id_sala, fecha, id_turno, creado_por))
 
 def agregar_alumno_a_reserva(id_reserva, ci):
-    return
+    sql = """INSERT INTO reserva_alumno (id_reserva, ci_alumno)
+            VALUES (%s, %s)"""
+    return run_query(sql, (id_reserva, ci))
 
 def cancelar_reserva(id_reserva):
-    return
+    sql = """UPDATE reserva SET estado='cancelada'
+            WHERE id_reserva=%s"""
+    return run_query(sql, (id_reserva,))
 
 def listar_reservas():
-    return
+    sql = """SELECT r.id_reserva, r.fecha, r.estado, t.hora_inicio, t.hora_fin, s.nombre_sala, e.nombre_edificio
+            FROM reserva r
+            JOIN turno t ON t.id_turno=r.id_turno
+            JOIN sala s ON s.id_sala=r.id_sala
+            JOIN edificio e ON e.id_edificio=s.id_edificio
+            ORDER BY r.fecha DESC, t.hora_inicio"""
+    return run_query(sql, fetch=True)
 
 def registrar_asistencia(id_reserva, ci):
     return
