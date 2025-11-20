@@ -12,9 +12,8 @@ export default function Alumno() {
     { id_sala: 3, nombre_sala: "Sala Verde", capacidad: 80 },
   ];
 
-  //
+
   // Cargar salas desde backend
-  //
     useEffect(() => {
       
     fetch("http://localhost:5000/api/salas")
@@ -40,10 +39,8 @@ export default function Alumno() {
       });
   }, []);
 
-  //
   // RESERVAR SALA
-  //
-  const handleReservar = async () => {
+    const handleReservar = async () => {
     const id_sala = prompt("ID de la sala:");
     if (!id_sala) return;
 
@@ -81,9 +78,7 @@ console.log("Datos enviados al backend:", {
     }
   };
 
-  //
   // CANCELAR RESERVA
-  //
   const handleCancelar = async () => {
     const id_reserva = prompt("ID de la reserva a cancelar:");
     if (!id_reserva) return;
@@ -104,9 +99,7 @@ console.log("Datos enviados al backend:", {
     }
   };
 
-  //
   // UI
-  //
   return (
     <div className="alumno-container">
       <h1>Reserva tu sala</h1>

@@ -1,7 +1,3 @@
--- =============================================
---  DDL.sql - Creación de Base y Tablas
--- =============================================
-
 SET NAMES utf8mb4;
 SET time_zone = '+00:00';
 
@@ -9,10 +5,7 @@ DROP DATABASE IF EXISTS ucu_salas;
 CREATE DATABASE ucu_salas CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 USE ucu_salas;
 
--- =============================================
 -- TABLAS PRINCIPALES
--- =============================================
-
 CREATE TABLE facultad (
   id_facultad INT AUTO_INCREMENT PRIMARY KEY,
   nombre VARCHAR(150) NOT NULL UNIQUE
@@ -67,10 +60,7 @@ CREATE TABLE sala (
   FOREIGN KEY (id_edificio) REFERENCES edificio(id_edificio)
 );
 
--- =============================================
 --  TABLA TURNO (MODELO CORRECTO)
--- =============================================
-
 CREATE TABLE turno (
   id_turno INT AUTO_INCREMENT PRIMARY KEY,
   id_sala INT NOT NULL,
@@ -83,10 +73,7 @@ CREATE TABLE turno (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 
--- =============================================
 -- TABLA RESERVA
--- =============================================
-
 CREATE TABLE reserva (
   id_reserva INT AUTO_INCREMENT PRIMARY KEY,
   id_sala INT NOT NULL,
@@ -101,10 +88,7 @@ CREATE TABLE reserva (
   FOREIGN KEY (creado_por) REFERENCES alumno(ci)
 );
 
--- =============================================
 -- TABLA RESERVA_ALUMNO
--- =============================================
-
 CREATE TABLE reserva_alumno (
   id_reserva INT NOT NULL,
   ci_alumno VARCHAR(20) NOT NULL,
@@ -116,10 +100,7 @@ CREATE TABLE reserva_alumno (
   FOREIGN KEY (ci_alumno) REFERENCES alumno(ci)
 );
 
--- =============================================
 -- TABLA SANCIONES
--- =============================================
-
 CREATE TABLE sancion_alumno (
   id_sancion INT AUTO_INCREMENT PRIMARY KEY,
   ci_alumno VARCHAR(20) NOT NULL,
@@ -132,10 +113,7 @@ CREATE TABLE sancion_alumno (
   CHECK (fecha_fin > fecha_inicio)
 );
 
--- =============================================
--- ÍNDICES
--- =============================================
-
+-- IndiES
 CREATE INDEX idx_reserva_fecha ON reserva(fecha);
 CREATE INDEX idx_reserva_estado ON reserva(estado);
 CREATE INDEX idx_rp_ci ON reserva_alumno(ci_alumno);

@@ -74,5 +74,5 @@ FROM (
   JOIN alumno_programa_academico ppa ON ppa.ci_alumno=rp.ci_alumno
   JOIN programa_academico pa ON pa.id_programa=ppa.id_programa
   GROUP BY tipo_alumno, r.id_reserva
-) z
+) 
 GROUP BY tipo_alumno;

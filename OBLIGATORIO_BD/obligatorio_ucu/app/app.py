@@ -15,7 +15,6 @@ from consultas_bi import ejecutar_bi
 
 app = Flask(__name__)
 
-# HABILITAR CORS PARA /api/* DESDE EL FRONT (http://localhost:3001)
 CORS(app, resources={r"/api/*": {"origins": "*"}})
 
 @app.after_request
@@ -26,9 +25,7 @@ def add_cors_headers(response):
     response.headers["Access-Control-Allow-Methods"] = "GET, POST, PUT, DELETE, OPTIONS"
     return response
 
-# 
 # ALUMNOS
-# 
 @app.get("/api/alumnos")
 def api_listar_alumnos():
     alumnos = listar_alumnos()
@@ -87,9 +84,7 @@ def api_eliminar_sala(id_sala):
     eliminar_sala(id_sala)
     return {"status": "ok"}
 
-# 
 # RESERVAS
-# 
 @app.get("/api/reservas")
 def api_listar_reservas():
     reservas = listar_reservas()
@@ -155,16 +150,14 @@ def api_cerrar_reserva(id_reserva):
     cerrar_reserva(id_reserva)
     return {"status": "ok"}
 
-# 
+
 # SANCIONES
-# 
 @app.get("/api/sanciones")
 def api_listar_sanciones():
     sanciones = listar_sanciones()
     return jsonify(sanciones)
 
 # CONSULTAS BI
-
 @app.get("/api/bi/<int:consulta_id>")
 def api_bi(consulta_id: int):
     """
@@ -179,8 +172,6 @@ def api_bi(consulta_id: int):
     except ValueError as e:
         return {"error": str(e)}, 400
 
-# 
 # MAIN
-#
 if __name__ == "__main__":
     app.run(port=5000, debug=True)
