@@ -1,13 +1,13 @@
-import os
 import mysql.connector
 
 def get_connection():
     cfg = {
-        "host": os.getenv("MYSQL_HOST", "localhost"),
-        "port": int(os.getenv("MYSQL_PORT", "3306")),
-        "user": os.getenv("MYSQL_USER", "root"),
-        "password": os.getenv("MYSQL_PASSWORD", "root"),
-        "database": os.getenv("MYSQL_DATABASE", "ucu_salas"),
+        "host": "localhost",
+        "port": 3306,
+        "user": "root",
+        "password": "root",
+        "database": "ucu_salas",
         "autocommit": True,
     }
+    print("DEBUG CFG EN get_connection():", cfg)
     return mysql.connector.connect(**cfg)

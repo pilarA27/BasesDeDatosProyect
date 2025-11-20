@@ -4,7 +4,9 @@ import Alumno from "./pages/Alumno";
 import Gestion from "./pages/Administrador";
 import Home from "./pages/Home";
 
-const USE_MOCK = true; //true: Docker desactivado, false: Docker activado
+
+
+const USE_MOCK = false; //true: Docker desactivado, false: Docker activado
 
 const salasMock = [
   { id_sala: 1, nombre_sala: "Sala Roja", capacidad: 100 },
