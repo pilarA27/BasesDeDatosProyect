@@ -103,11 +103,11 @@ def listar_reservas():
         reservas.append({
             "id_reserva": r["id_reserva"],
             "id_sala": r["id_sala"],
-            "fecha": str(r["fecha"]),            # FIX DATE
+            "fecha": str(r["fecha"]),          
             "id_turno": r["id_turno"],
             "creado_por": r["creado_por"],
-            "hora_inicio": str(r["hora_inicio"]), # FIX TIME
-            "hora_fin": str(r["hora_fin"])        # FIX TIME
+            "hora_inicio": str(r["hora_inicio"]),
+            "hora_fin": str(r["hora_fin"])       
         })
     return reservas
 

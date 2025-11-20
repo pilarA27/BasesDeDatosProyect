@@ -19,7 +19,6 @@ CORS(app, resources={r"/api/*": {"origins": "*"}})
 
 @app.after_request
 def add_cors_headers(response):
-    # si querés ser más estricto: "http://localhost:3001" en vez de "*"
     response.headers["Access-Control-Allow-Origin"] = "*"
     response.headers["Access-Control-Allow-Headers"] = "Content-Type, Authorization"
     response.headers["Access-Control-Allow-Methods"] = "GET, POST, PUT, DELETE, OPTIONS"
@@ -47,10 +46,8 @@ def api_modificar_alumno(ci):
 def api_eliminar_alumno(ci):
     eliminar_alumno(ci)
     return {"status": "ok"}
-
-# 
+ 
 # SALAS
-# 
 @app.get("/api/salas")
 def api_listar_salas():
     salas = listar_salas()
