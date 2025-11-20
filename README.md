@@ -21,3 +21,6 @@ npm start
 
 No se si ejecutar esto, esta aca por las dudas
 docker compose run --rm -it app??
+
+No se si tienen que ejecutar esto:
+.\.venv\Scripts\Activate.ps1
