@@ -1,4 +1,7 @@
 # BasesDeDatosProyecto
+Primero tienen que ejecutar esto:
+pip install flask mysql-connector-python
+.\.venv\Scripts\Activate.ps1
 
 cd OBLIGATORIO_BD
 
@@ -21,6 +24,3 @@ npm start
 
 No se si ejecutar esto, esta aca por las dudas
 docker compose run --rm -it app??
-
-No se si tienen que ejecutar esto:
-.\.venv\Scripts\Activate.ps1
