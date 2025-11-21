@@ -191,3 +191,48 @@ BEGIN
   END IF;
 END$$
 DELIMITER ;
+
+DROP PROCEDURE IF EXISTS registrar_asistencia;
+DELIMITER $$
+CREATE PROCEDURE registrar_asistencia(IN p_id_reserva INT, IN p_ci VARCHAR(20))
+BEGIN
+  UPDATE reserva_participante
+     SET asistencia=1, checkin_ts=NOW()
+   WHERE id_reserva=p_id_reserva AND ci_participante=p_ci;
+END$$
+DELIMITER ;
+
+DROP PROCEDURE IF EXISTS cerrar_reserva;
+DELIMITER $$
+CREATE PROCEDURE cerrar_reserva(IN p_id_reserva INT)
+BEGIN
+  DECLARE v_asistentes INT DEFAULT 0;
+  DECLARE v_total INT DEFAULT 0;
+
+  SELECT COALESCE(SUM(rp.asistencia),0), COUNT(*) INTO v_asistentes, v_total
+  FROM reserva_participante rp WHERE rp.id_reserva=p_id_reserva;
+
+  IF v_total=0 THEN
+    UPDATE reserva SET estado='cancelada' WHERE id_reserva=p_id_reserva;
+  ELSEIF v_asistentes>0 THEN
+    UPDATE reserva SET estado='finalizada' WHERE id_reserva=p_id_reserva;
+  ELSE
+    UPDATE reserva SET estado='sin_asistencia' WHERE id_reserva=p_id_reserva;
+
+    INSERT INTO sancion_participante (ci_participante, fecha_inicio, fecha_fin, motivo, id_reserva)
+    SELECT rp.ci_participante, CURRENT_DATE(), DATE_ADD(CURRENT_DATE(), INTERVAL 2 MONTH),
+           'No-show: reserva sin asistencia', p_id_reserva
+    FROM reserva_participante rp
+    WHERE rp.id_reserva=p_id_reserva;
+  END IF;
+END$$
+DELIMITER ;
+
+DROP VIEW IF EXISTS vw_disponibilidad_bloques;
+CREATE VIEW vw_disponibilidad_bloques AS
+SELECT s.id_sala, s.nombre_sala, s.id_edificio, r.fecha, t.id_turno,
+  CASE WHEN r2.id_reserva IS NULL THEN 1 ELSE 0 END AS bloque_libre
+FROM sala s
+JOIN (SELECT DISTINCT fecha FROM reserva) r ON 1=1
+JOIN turno t ON 1=1
+LEFT JOIN reserva r2 ON r2.id_sala=s.id_sala AND r2.fecha=r.fecha AND r2.id_turno=t.id_turno;
