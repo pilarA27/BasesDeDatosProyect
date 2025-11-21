@@ -78,8 +78,12 @@ def agregar_alumno_a_reserva(id_reserva, ci):
     return run_query(sql, (id_reserva, ci))
 
 def cancelar_reserva(id_reserva):
+    run_query("DELETE FROM reserva_alumno WHERE id_reserva=%s", (id_reserva,))
+
     sql = "UPDATE reserva SET estado='cancelada' WHERE id_reserva=%s"
     return run_query(sql, (id_reserva,))
+
+
 
 def listar_reservas():
     sql = """
@@ -89,13 +93,15 @@ def listar_reservas():
             r.fecha,
             r.id_turno,
             r.creado_por,
+            r.estado,
             t.hora_inicio,
             t.hora_fin
         FROM reserva r
         JOIN turno t ON r.id_turno = t.id_turno
+        WHERE r.estado = 'activa'
         ORDER BY r.id_reserva DESC
     """
-    
+
     rows = run_query(sql, fetch=True)
 
     reservas = []
@@ -103,13 +109,15 @@ def listar_reservas():
         reservas.append({
             "id_reserva": r["id_reserva"],
             "id_sala": r["id_sala"],
-            "fecha": str(r["fecha"]),          
+            "fecha": str(r["fecha"]),
             "id_turno": r["id_turno"],
             "creado_por": r["creado_por"],
+            "estado": r["estado"],
             "hora_inicio": str(r["hora_inicio"]),
-            "hora_fin": str(r["hora_fin"])       
+            "hora_fin": str(r["hora_fin"]),
         })
     return reservas
+
 
 # ASISTENCIA
 def registrar_asistencia(id_reserva, ci):
@@ -137,17 +145,17 @@ def cerrar_reserva(id_reserva):
 
     # 2) Generar sanción si nadie fue
     if asistencias == 0:
-        sql_participantes = """
+        sql_alumnos = """
             SELECT ci_alumno
             FROM reserva_alumno
             WHERE id_reserva=%s
         """
-        participantes = run_query(sql_participantes, (id_reserva,), fetch=True)
+        alumnos = run_query(sql_alumnos, (id_reserva,), fetch=True)
 
         hoy = datetime.today().date()
         fin_sancion = hoy + timedelta(days=60)
 
-        for p in participantes:
+        for p in alumnos:
             sql_sancion = """
                 INSERT INTO sancion_alumno (ci_alumno, fecha_inicio, fecha_fin, motivo, id_reserva)
                 VALUES (%s, %s, %s, %s, %s)
@@ -161,6 +169,45 @@ def cerrar_reserva(id_reserva):
             ))
 
     return True
+
+def listar_turnos():
+    """
+    Devuelve todos los turnos generados en la BD.
+    Convierte cualquier timedelta a string para que Flask pueda serializarlo.
+    """
+    cn = get_connection()
+    try:
+        cur = cn.cursor(dictionary=True)
+        cur.execute("""
+            SELECT 
+                id_turno,
+                id_sala,
+                fecha,
+                hora_inicio,
+                hora_fin,
+                disponible
+            FROM turno
+            ORDER BY fecha, id_sala, hora_inicio
+        """)
+        rows = cur.fetchall()
+
+        # Convertimos timedelta/hora a string
+        turnos = []
+        for t in rows:
+            turnos.append({
+                "id_turno": t["id_turno"],
+                "id_sala": t["id_sala"],
+                "fecha": str(t["fecha"]),
+                "hora_inicio": str(t["hora_inicio"]),
+                "hora_fin": str(t["hora_fin"]),
+                "disponible": t["disponible"]
+            })
+
+        return turnos
+    finally:
+        cn.close()
+
+
 # SANCIONES
 def listar_sanciones():
     sql = """

@@ -2,145 +2,266 @@ import { useEffect, useState } from "react";
 import "../styles/Alumno.css";
 
 export default function Alumno() {
-  const [modalOpen, setModalOpen] = useState(false);
   const [salas, setSalas] = useState([]);
+  const [turnos, setTurnos] = useState([]);
+  const [reservas, setReservas] = useState([]);
   const [errorBackend, setErrorBackend] = useState(false);
 
-  const salasMock = [
-    { id_sala: 1, nombre_sala: "Sala Roja", capacidad: 100 },
-    { id_sala: 2, nombre_sala: "Sala Azul", capacidad: 150 },
-    { id_sala: 3, nombre_sala: "Sala Verde", capacidad: 80 },
-  ];
+  const [modal, setModal] = useState({
+    open: false,
+    title: "",
+    content: null,
+    showInput: false,
+    inputValue: "",
+    onConfirm: null,
+  });
 
+  const openModal = (title, content = null, showInput = false, onConfirm = null) => {
+    setModal({
+      open: true,
+      title,
+      content,
+      showInput,
+      inputValue: "",
+      onConfirm,
+    });
+  };
 
-  // Cargar salas desde backend
-    useEffect(() => {
-      
+  const closeModal = () => {
+    setModal({
+      open: false,
+      title: "",
+      content: null,
+      showInput: false,
+      inputValue: "",
+      onConfirm: null,
+    });
+  };
+
+  // -------------------------------------------------
+  //   CARGA INICIAL
+  // -------------------------------------------------
+  useEffect(() => {
     fetch("http://localhost:5000/api/salas")
-      .then(res => {
-        console.log("RES /api/salas status:", res.status);
-        if (!res.ok) {
-          return res.text().then(txt => {
-            console.error("Respuesta NO OK del backend:", txt);
-            throw new Error("Backend sin respuesta");
-          });
-        }
-        return res.json();
-      })
-      .then(data => {
-        console.log("Datos de salas desde backend:", data);
-        setSalas(data);
-        setErrorBackend(false);
-      })
-      .catch(err => {
-        console.warn("Error al conectar con backend, usando mock:", err);
-        setSalas(salasMock);
+      .then((res) => res.json())
+      .then((data) => setSalas(data))
+      .catch(() => {
         setErrorBackend(true);
+        setSalas([]);
       });
+
+    fetch("http://localhost:5000/api/turnos")
+      .then((res) => res.json())
+      .then((data) => setTurnos(data))
+      .catch(() => setTurnos([]));
+
+    cargarReservas();
   }, []);
 
-  // RESERVAR SALA
-    const handleReservar = async () => {
-    const id_sala = prompt("ID de la sala:");
-    if (!id_sala) return;
+  const cargarReservas = () => {
+    fetch("http://localhost:5000/api/reservas")
+      .then((res) => res.json())
+      .then((data) => setReservas(data))
+      .catch(() => setReservas([]));
+  };
 
-    const fecha = prompt("Fecha (YYYY-MM-DD):");
-    if (!fecha) return;
+  // -------------------------------------------------
+  //   RESERVAR
+  // -------------------------------------------------
+  const handleReservar = () => {
+    openModal(
+      "Elegí una sala",
+      <ul className="salas-list">
+        {salas.map((s) => (
+          <li
+            key={s.id_sala}
+            style={{ cursor: "pointer", padding: "8px 0" }}
+            onClick={() => pedirFecha(s.id_sala)}
+          >
+            <strong>ID {s.id_sala}</strong> — {s.nombre_sala} (cap. {s.capacidad})
+          </li>
+        ))}
+      </ul>
+    );
+  };
 
-    const id_turno = prompt("ID del turno (1,2,3…):");
-    if (!id_turno) return;
+  const pedirFecha = (id_sala) => {
+    openModal(
+      "Ingresá la fecha (YYYY-MM-DD):",
+      null,
+      true,
+      (fecha) => pedirTurno(id_sala, fecha)
+    );
+  };
 
-    const creado_por = prompt("Tu CI (creador de la reserva):");
-    if (!creado_por) return;
-console.log("Datos enviados al backend:", {
-    id_sala: Number(id_sala),
-    fecha,
-    id_turno: Number(id_turno),
-    creado_por
-  });
+  const pedirTurno = (id_sala, fecha) => {
+    const turnosSala = turnos.filter((t) => t.id_sala === id_sala);
+
+    openModal(
+      "Turnos disponibles",
+      <div className="turnos-scroll">
+        <ul className="salas-list">
+          {turnosSala.map((t) => (
+            <li
+              key={t.id_turno}
+              style={{ cursor: "pointer", padding: "8px 0" }}
+              onClick={() => pedirCI(id_sala, fecha, t.id_turno)}
+            >
+              <strong>ID {t.id_turno}</strong> — {t.hora_inicio} a {t.hora_fin}
+            </li>
+          ))}
+        </ul>
+      </div>
+    );
+  };
+
+  const pedirCI = (id_sala, fecha, id_turno) => {
+    openModal(
+      "Ingresá tu CI:",
+      null,
+      true,
+      (ci) => confirmarReserva(id_sala, fecha, id_turno, ci)
+    );
+  };
+
+  const confirmarReserva = async (id_sala, fecha, id_turno, ci) => {
     try {
       const res = await fetch("http://localhost:5000/api/reservas", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          id_sala: Number(id_sala),
+          id_sala,
           fecha,
-          id_turno: Number(id_turno),
-          creado_por,
+          id_turno,
+          creado_por: ci,
         }),
       });
 
-      if (!res.ok) throw new Error("Error al crear reserva");
-      alert("✅ Reserva creada correctamente");
-    } catch (err) {
-      console.error(err);
-      alert("No se pudo crear la reserva");
+      if (!res.ok) throw new Error();
+
+      cargarReservas();
+      openModal("Reserva creada", <p>La reserva fue creada correctamente.</p>);
+    } catch {
+      openModal("Error", <p>No se pudo crear la reserva.</p>);
     }
   };
 
-  // CANCELAR RESERVA
-  const handleCancelar = async () => {
-    const id_reserva = prompt("ID de la reserva a cancelar:");
-    if (!id_reserva) return;
+  //cancelar reserva
+  const handleCancelar = () => {
+    cargarReservas();
 
+    setTimeout(() => {
+      openModal(
+        "Elegí la reserva a cancelar",
+        <ul className="salas-list">
+          {reservas.map((r) => (
+            <li
+              key={r.id_reserva}
+              style={{ cursor: "pointer", padding: "8px 0" }}
+              onClick={() => confirmarCancelacion(r.id_reserva)}
+            >
+              <strong>ID {r.id_reserva}</strong> — Sala {r.id_sala}
+              <br />
+              {r.fecha} — {r.hora_inicio} a {r.hora_fin}
+            </li>
+          ))}
+        </ul>
+      );
+    }, 150);
+  };
+
+  const confirmarCancelacion = async (id_reserva) => {
     try {
       const res = await fetch(
-        `http://localhost:5000/api/reservas/${Number(id_reserva)}/cancelar`,
-        {
-          method: "PUT",
-        }
+        `http://localhost:5000/api/reservas/${id_reserva}/cancelar`,
+        { method: "PUT" }
       );
 
-      if (!res.ok) throw new Error("Error al cancelar reserva");
-      alert("Reserva cancelada correctamente");
-    } catch (err) {
-      console.error(err);
-      alert("No se pudo cancelar la reserva");
+      if (!res.ok) throw new Error();
+
+      await cargarReservas();
+
+      openModal("Reserva cancelada", <p>Cancelada correctamente.</p>);
+    } catch {
+      openModal("Error", <p>No se pudo cancelar.</p>);
     }
   };
 
-  // UI
+  //UI
   return (
     <div className="alumno-container">
       <h1>Reserva tu sala</h1>
 
       {errorBackend && (
-        <p style={{ color: "red" }}>
-          No se pudo conectar al servidor — mostrando datos de prueba.
-        </p>
+        <p style={{ color: "red" }}>Backend caído — usando datos vacíos.</p>
       )}
 
       <div className="button-box">
-        <button onClick={handleReservar}>
-          Reservar sala
-        </button>
-
-        <button onClick={handleCancelar}>
-          Cancelar reserva
-        </button>
-
-        <button onClick={() => setModalOpen(true)}>
+        <button onClick={handleReservar}>Reservar sala</button>
+        <button onClick={handleCancelar}>Cancelar reserva</button>
+        <button
+          onClick={() =>
+            openModal(
+              "Salas disponibles",
+              <ul className="salas-list">
+                {salas.map((s) => (
+                  <li key={s.id_sala}>
+                    <strong>ID {s.id_sala}</strong> — {s.nombre_sala} (cap. {s.capacidad})
+                  </li>
+                ))}
+              </ul>
+            )
+          }
+        >
           Salas disponibles
         </button>
       </div>
 
-      {/* Salas Disponibles */}
-      {modalOpen && (
-        <div className="modal-overlay" onClick={() => setModalOpen(false)}>
+      <button
+        className="back-btn"
+        style={{ marginTop: "25px" }}
+        onClick={() => window.history.back()}
+      >
+        Volver
+      </button>
+
+
+      {modal.open && (
+        <div className="modal-overlay" onClick={closeModal}>
           <div className="modal" onClick={(e) => e.stopPropagation()}>
-            <h2>Salas disponibles</h2>
+            <h2>{modal.title}</h2>
 
-            <ul className="salas-list">
-              {salas.map((s) => (
-                <li key={s.id_sala}>
-                  <strong>{s.nombre_sala}</strong> — capacidad {s.capacidad}
-                </li>
-              ))}
-            </ul>
+            {modal.content}
 
-            <button className="close-btn" onClick={() => setModalOpen(false)}>
-              Cerrar
-            </button>
+            {modal.showInput && (
+              <>
+                <input
+                  className="input"
+                  value={modal.inputValue}
+                  onChange={(e) =>
+                    setModal((m) => ({ ...m, inputValue: e.target.value }))
+                  }
+                />
+
+                <button
+                  className="close-btn"
+                  style={{ marginTop: "15px" }}
+                  onClick={() => {
+                    const val = modal.inputValue;
+                    closeModal();
+                    setTimeout(() => modal.onConfirm(val), 0);
+                  }}
+                >
+                  Aceptar
+                </button>
+              </>
+            )}
+
+            {!modal.showInput && (
+              <button className="close-btn" onClick={closeModal}>
+                Cerrar
+              </button>
+            )}
           </div>
         </div>
       )}

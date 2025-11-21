@@ -9,8 +9,9 @@ from funciones_abm import (
     # RESERVAS / ASISTENCIA / SANCIONES
     crear_reserva, agregar_alumno_a_reserva, cancelar_reserva,
     listar_reservas, registrar_asistencia, cerrar_reserva,
-    listar_sanciones,
+    listar_sanciones, listar_turnos,
 )
+
 from consultas_bi import ejecutar_bi
 
 app = Flask(__name__)
@@ -64,6 +65,13 @@ def api_alta_sala():
     )
     return {"status": "ok"}, 201
 
+    # TURNOS
+@app.get("/api/turnos")
+def api_listar_turnos():
+    turnos = listar_turnos()
+    return jsonify(turnos)
+
+
 @app.put("/api/salas/<int:id_sala>")
 def api_modificar_sala(id_sala):
     data = request.json
@@ -107,8 +115,8 @@ def api_crear_reserva():
     )
     return {"status": "ok"}, 201
 
-@app.post("/api/reservas/<int:id_reserva>/participantes")
-def api_agregar_participante(id_reserva):
+@app.post("/api/reservas/<int:id_reserva>/alumno")
+def api_agregar_alumno(id_reserva):
     """
     Espera JSON:
     {

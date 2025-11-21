@@ -14,8 +14,8 @@ async function crearAlumno() {
 
   await fetch(`${API}/alumnos`, {
     method: "POST",
-    headers: {"Content-Type": "application/json"},
-    body: JSON.stringify({ci, nombre, apellido, email})
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ ci, nombre, apellido, email })
   });
 
   alert("Alumno creado");
@@ -31,8 +31,8 @@ async function modificarAlumno() {
 
   await fetch(`${API}/alumnos/${ci}`, {
     method: "PUT",
-    headers: {"Content-Type": "application/json"},
-    body: JSON.stringify({nombre, apellido, email})
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ nombre, apellido, email })
   });
 
   alert("Alumno modificado");
@@ -65,8 +65,8 @@ async function crearSala() {
 
   await fetch(`${API}/salas`, {
     method: "POST",
-    headers: {"Content-Type": "application/json"},
-    body: JSON.stringify({nombre_sala, id_edificio, capacidad, tipo_sala})
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ nombre_sala, id_edificio, capacidad, tipo_sala })
   });
 
   alert("Sala creada");
@@ -83,7 +83,7 @@ async function modificarSala() {
 
   await fetch(`${API}/salas/${id_sala}`, {
     method: "PUT",
-    headers: {"Content-Type": "application/json"},
+    headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
       nombre_sala, id_edificio, capacidad, tipo_sala
     })
@@ -119,8 +119,8 @@ async function confirmarAsistencia() {
 
   await fetch(`${API}/reservas/${id_reserva}/asistencia`, {
     method: "POST",
-    headers: {"Content-Type": "application/json"},
-    body: JSON.stringify({ci_alumno})
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ ci_alumno })
   });
 
   alert("Asistencia registrada");
@@ -156,6 +156,7 @@ export default function Administrador() {
           <button onClick={modificarSala}>Modificar</button>
           <button onClick={listarSalas}>Ver todas</button>
           <button onClick={eliminarSala}>Eliminar</button>
+
         </div>
 
         <div className="button-box">
@@ -167,9 +168,23 @@ export default function Administrador() {
         <div className="button-box">
           <div>Sanciones</div>
           <button onClick={listarSanciones}>Ver todas</button>
+          
+        </div>
         </div>
 
+        <div className="button-box">
+          <div>Atras</div>
+          <button className="back-btn" onClick={() => window.history.back()}>
+            Volver
+          </button>
+        
+        </div>
+
+        
+          
+
+
+
       </div>
-    </div>
   );
 }

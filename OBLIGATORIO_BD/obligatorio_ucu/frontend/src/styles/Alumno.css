@@ -57,7 +57,42 @@
   background-color: #153119;
 }
 
-@keyframes fadeIn {
-  from { transform: scale(0.9); opacity: 0; }
-  to   { transform: scale(1); opacity: 1; }
+.input {
+  width: 100%;
+  padding: 10px;
+  border-radius: 8px;
+  border: 1px solid #ccc;
+  margin-top: 10px;
+  font-size: 16px;
 }
+
+@keyframes fadeIn {
+  from {
+    transform: scale(0.9);
+    opacity: 0;
+  }
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+.turnos-scroll {
+  max-height: 200px;   
+  overflow-y: auto;    
+  margin: 15px 0;
+  padding-right: 5px;
+}
+
+.back-btn {
+  margin-top: 20px;
+  padding: 10px 15px;
+  border: none;
+  background-color: #234e28;
+  color: white;
+  border-radius: 8px;
+  cursor: pointer;
+}
+.back-btn:hover {
+  background-color: #333;
+}
+

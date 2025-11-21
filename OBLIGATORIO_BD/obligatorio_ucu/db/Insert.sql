@@ -59,7 +59,6 @@ SELECT
     s.id_sala,
     f.fecha,
     SEC_TO_TIME(TIME_TO_SEC('08:00:00') + h.id_hora * 3600),
-    SEC_TO_TIME(TIME_TO_SEC('09:00:00') + h.id_hora * 3600),
 
     1
 FROM sala s
