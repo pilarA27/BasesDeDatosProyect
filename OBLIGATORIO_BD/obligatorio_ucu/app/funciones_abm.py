@@ -180,10 +180,6 @@ def cerrar_reserva(id_reserva):
     return True
 
 def listar_turnos():
-    """
-    Devuelve todos los turnos generados en la BD.
-    Convierte cualquier timedelta a string para que Flask pueda serializarlo.
-    """
     cn = get_connection()
     try:
         cur = cn.cursor(dictionary=True)
@@ -192,29 +188,34 @@ def listar_turnos():
                 id_turno,
                 id_sala,
                 fecha,
-                hora_inicio,
-                hora_fin,
+                TIME_FORMAT(hora_inicio, '%H:%i') AS hora_inicio,
+                TIME_FORMAT(hora_fin, '%H:%i') AS hora_fin,
                 disponible
             FROM turno
             ORDER BY fecha, id_sala, hora_inicio
         """)
         rows = cur.fetchall()
 
-        # Convertimos timedelta/hora a string
         turnos = []
         for t in rows:
             turnos.append({
-                "id_turno": t["id_turno"],
-                "id_sala": t["id_sala"],
-                "fecha": str(t["fecha"]),
-                "hora_inicio": str(t["hora_inicio"]),
-                "hora_fin": str(t["hora_fin"]),
-                "disponible": t["disponible"]
+                "id_turno": t.get("id_turno"),
+                "id_sala": t.get("id_sala"),
+                "fecha": str(t.get("fecha")),
+                "hora_inicio": t.get("hora_inicio"),
+                "hora_fin": t.get("hora_fin"),
+                "disponible": t.get("disponible"),
             })
 
         return turnos
+
+    except Exception as e:
+        print("ERROR listando turnos:", e)
+        return []
+
     finally:
         cn.close()
+
 
 
 # SANCIONES

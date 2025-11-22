@@ -112,31 +112,40 @@ export default function Alumno() {
     );
   };
 
-  const pedirTurno = (id_sala, fecha) => {
-    const turnosSala = turnos.filter(
-      (t) => t.id_sala === id_sala && t.fecha === fecha
+ const pedirTurno = async (id_sala, fecha) => {
+  try {
+    const res = await fetch(
+      `http://localhost:5000/api/turnos_disponibles?id_sala=${id_sala}&fecha=${fecha}`
     );
 
-    if (turnosSala.length === 0) {
+    const turnosDisp = await res.json();
+
+    if (turnosDisp.length === 0) {
       openModal("Sin turnos", <p>No hay turnos disponibles para esa fecha.</p>);
       return;
     }
 
     openModal(
-      `Turnos disponibles para el ${fechaLinda(fecha)}`,
+      `Turnos disponibles — ${fechaLinda(fecha)}`,
       <ul className="salas-list">
-        {turnosSala.map((t) => (
+        {turnosDisp.map((t) => (
           <li
             key={t.id_turno}
             style={{ cursor: "pointer", padding: "8px 0" }}
             onClick={() => pedirCI(id_sala, fecha, t.id_turno)}
           >
-            <strong>{t.hora_inicio}</strong> a <strong>{t.hora_fin}</strong> — Turno #{t.id_turno}
+            <strong>{t.hora_inicio}</strong> a <strong>{t.hora_fin}</strong>
+            {" – "}
+            {t.dia}
           </li>
         ))}
       </ul>
     );
-  };
+  } catch {
+    openModal("Error", <p>No se pudieron cargar los turnos.</p>);
+  }
+};
+
 
   const pedirCI = (id_sala, fecha, id_turno) => {
     openModal(

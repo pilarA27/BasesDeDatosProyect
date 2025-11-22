@@ -151,9 +151,9 @@ export default function Administrador() {
     "Cantidad de sanciones para profesores y alumnos (grado y posgrado)",
     "Porcentaje de reservas efectivamente utilizadas vs. canceladas/no asistidas",
     "Ranking alumnos más activos",
-    "Ranking de tipo de salas más utilizadas",
-    "Reservas por edificio",
-    "Salas más utilizadas por día de semana",
+    "Ranking de tipo de edificios más utilizados",
+    "Reservas por sala por dia de la seman",
+    "FALTA",
   ];
 
 //pantalla bi

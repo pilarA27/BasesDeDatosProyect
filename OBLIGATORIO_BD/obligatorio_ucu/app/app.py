@@ -1,6 +1,9 @@
 from flask import Flask, jsonify, request
 from flask_cors import CORS
 
+from db_config import get_connection
+
+
 from funciones_abm import (
     # ALUMNOS
     listar_alumnos, alta_alumno, eliminar_alumno, modificar_alumno,
@@ -88,6 +91,58 @@ def api_modificar_sala(id_sala):
 def api_eliminar_sala(id_sala):
     eliminar_sala(id_sala)
     return {"status": "ok"}
+
+    # TURNOS DISPONIBLES (por sala + fecha, excluye reservados)
+@app.get("/api/turnos_disponibles")
+def api_turnos_disponibles():
+    id_sala = request.args.get("id_sala", type=int)
+    fecha = request.args.get("fecha")
+
+    sql = """
+        SELECT 
+            t.id_turno,
+            t.hora_inicio,
+            t.hora_fin,
+            DAYNAME(t.fecha) AS dia_en_ing
+        FROM turno t
+        WHERE 
+            t.id_sala = %s
+            AND t.fecha = %s
+            AND t.disponible = 1
+            AND t.id_turno NOT IN (
+                SELECT id_turno
+                FROM reserva
+                WHERE fecha = %s AND id_sala = %s
+            )
+        ORDER BY t.hora_inicio
+    """
+
+    cn = get_connection()
+    try:
+        cur = cn.cursor(dictionary=True)
+        cur.execute(sql, (id_sala, fecha, fecha, id_sala))
+        rows = cur.fetchall()
+
+        dias_es = {
+            "Monday": "Lunes",
+            "Tuesday": "Martes",
+            "Wednesday": "Miércoles",
+            "Thursday": "Jueves",
+            "Friday": "Viernes",
+            "Saturday": "Sábado",
+            "Sunday": "Domingo",
+        }
+
+        for r in rows:
+            r["hora_inicio"] = str(r["hora_inicio"])
+            r["hora_fin"] = str(r["hora_fin"])
+            r["dia"] = dias_es.get(r["dia_en_ing"], r["dia_en_ing"])
+            del r["dia_en_ing"]
+
+        return jsonify(rows)
+    finally:
+        cn.close()
+
 
 # RESERVAS
 @app.get("/api/reservas")
