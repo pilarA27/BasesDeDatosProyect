@@ -16,6 +16,9 @@ export default function Alumno() {
     onConfirm: null,
   });
 
+  // -------------------------
+  // Modal helpers
+  // -------------------------
   const openModal = (title, content = null, showInput = false, onConfirm = null) => {
     setModal({
       open: true,
@@ -38,9 +41,24 @@ export default function Alumno() {
     });
   };
 
-  // -------------------------------------------------
-  //   CARGA INICIAL
-  // -------------------------------------------------
+  // -------------------------
+  // Fecha linda en español
+  // -------------------------
+  const meses = {
+    "01": "enero", "02": "febrero", "03": "marzo",
+    "04": "abril", "05": "mayo", "06": "junio",
+    "07": "julio", "08": "agosto", "09": "setiembre",
+    "10": "octubre", "11": "noviembre", "12": "diciembre"
+  };
+
+  function fechaLinda(yyyy_mm_dd) {
+    const [a, m, d] = yyyy_mm_dd.split("-");
+    return `${d} de ${meses[m]} de ${a}`;
+  }
+
+  // -------------------------
+  // CARGA INICIAL
+  // -------------------------
   useEffect(() => {
     fetch("http://localhost:5000/api/salas")
       .then((res) => res.json())
@@ -65,9 +83,9 @@ export default function Alumno() {
       .catch(() => setReservas([]));
   };
 
-  // -------------------------------------------------
-  //   RESERVAR
-  // -------------------------------------------------
+  // -------------------------
+  // RESERVAR
+  // -------------------------
   const handleReservar = () => {
     openModal(
       "Elegí una sala",
@@ -78,7 +96,7 @@ export default function Alumno() {
             style={{ cursor: "pointer", padding: "8px 0" }}
             onClick={() => pedirFecha(s.id_sala)}
           >
-            <strong>ID {s.id_sala}</strong> — {s.nombre_sala} (cap. {s.capacidad})
+            <strong>Sala {s.id_sala}</strong> — {s.nombre_sala} (cap. {s.capacidad})
           </li>
         ))}
       </ul>
@@ -90,28 +108,33 @@ export default function Alumno() {
       "Ingresá la fecha (YYYY-MM-DD):",
       null,
       true,
-      (fecha) => pedirTurno(id_sala, fecha)
+      (fecha) => pedirTurno(id_sala, fecha.trim())
     );
   };
 
   const pedirTurno = (id_sala, fecha) => {
-    const turnosSala = turnos.filter((t) => t.id_sala === id_sala);
+    const turnosSala = turnos.filter(
+      (t) => t.id_sala === id_sala && t.fecha === fecha
+    );
+
+    if (turnosSala.length === 0) {
+      openModal("Sin turnos", <p>No hay turnos disponibles para esa fecha.</p>);
+      return;
+    }
 
     openModal(
-      "Turnos disponibles",
-      <div className="turnos-scroll">
-        <ul className="salas-list">
-          {turnosSala.map((t) => (
-            <li
-              key={t.id_turno}
-              style={{ cursor: "pointer", padding: "8px 0" }}
-              onClick={() => pedirCI(id_sala, fecha, t.id_turno)}
-            >
-              <strong>ID {t.id_turno}</strong> — {t.hora_inicio} a {t.hora_fin}
-            </li>
-          ))}
-        </ul>
-      </div>
+      `Turnos disponibles para el ${fechaLinda(fecha)}`,
+      <ul className="salas-list">
+        {turnosSala.map((t) => (
+          <li
+            key={t.id_turno}
+            style={{ cursor: "pointer", padding: "8px 0" }}
+            onClick={() => pedirCI(id_sala, fecha, t.id_turno)}
+          >
+            <strong>{t.hora_inicio}</strong> a <strong>{t.hora_fin}</strong> — Turno #{t.id_turno}
+          </li>
+        ))}
+      </ul>
     );
   };
 
@@ -146,10 +169,11 @@ export default function Alumno() {
     }
   };
 
-  //cancelar reserva
+  // -------------------------
+  // CANCELAR RESERVA
+  // -------------------------
   const handleCancelar = () => {
     cargarReservas();
-
     setTimeout(() => {
       openModal(
         "Elegí la reserva a cancelar",
@@ -162,7 +186,7 @@ export default function Alumno() {
             >
               <strong>ID {r.id_reserva}</strong> — Sala {r.id_sala}
               <br />
-              {r.fecha} — {r.hora_inicio} a {r.hora_fin}
+              {fechaLinda(r.fecha)} — {r.hora_inicio} a {r.hora_fin}
             </li>
           ))}
         </ul>
@@ -180,14 +204,15 @@ export default function Alumno() {
       if (!res.ok) throw new Error();
 
       await cargarReservas();
-
       openModal("Reserva cancelada", <p>Cancelada correctamente.</p>);
     } catch {
       openModal("Error", <p>No se pudo cancelar.</p>);
     }
   };
 
-  //UI
+  // -------------------------
+  // UI
+  // -------------------------
   return (
     <div className="alumno-container">
       <h1>Reserva tu sala</h1>
@@ -199,6 +224,7 @@ export default function Alumno() {
       <div className="button-box">
         <button onClick={handleReservar}>Reservar sala</button>
         <button onClick={handleCancelar}>Cancelar reserva</button>
+
         <button
           onClick={() =>
             openModal(
@@ -206,31 +232,25 @@ export default function Alumno() {
               <ul className="salas-list">
                 {salas.map((s) => (
                   <li key={s.id_sala}>
-                    <strong>ID {s.id_sala}</strong> — {s.nombre_sala} (cap. {s.capacidad})
+                    <strong>{s.nombre_sala}</strong> — Edificio {s.edificio}
                   </li>
                 ))}
               </ul>
             )
           }
         >
-          Salas disponibles
+          Ver salas
         </button>
       </div>
 
-      <button
-        className="back-btn"
-        style={{ marginTop: "25px" }}
-        onClick={() => window.history.back()}
-      >
+      <button className="back-btn" style={{ marginTop: "25px" }} onClick={() => window.history.back()}>
         Volver
       </button>
-
 
       {modal.open && (
         <div className="modal-overlay" onClick={closeModal}>
           <div className="modal" onClick={(e) => e.stopPropagation()}>
             <h2>{modal.title}</h2>
-
             {modal.content}
 
             {modal.showInput && (
@@ -242,7 +262,6 @@ export default function Alumno() {
                     setModal((m) => ({ ...m, inputValue: e.target.value }))
                   }
                 />
-
                 <button
                   className="close-btn"
                   style={{ marginTop: "15px" }}

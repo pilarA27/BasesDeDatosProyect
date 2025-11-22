@@ -97,23 +97,21 @@ def api_listar_reservas():
 
 @app.post("/api/reservas")
 def api_crear_reserva():
-    """
-    Espera JSON:
-    {
-      "id_sala": 1,
-      "fecha": "2025-11-20",   # YYYY-MM-DD
-      "id_turno": 1,
-      "creado_por": "4.111.111-1"   # ci alumno/docente creador
-    }
-    """
     data = request.json
-    crear_reserva(
+
+    # 1) Crear reserva
+    nuevo_id = crear_reserva(
         data["id_sala"],
         data["fecha"],
         data["id_turno"],
         data["creado_por"],
     )
-    return {"status": "ok"}, 201
+
+    # 2) Agregar automáticamente al creador como participante
+    agregar_alumno_a_reserva(nuevo_id, data["creado_por"])
+
+    return {"status": "ok", "id_reserva": nuevo_id}, 201
+
 
 @app.post("/api/reservas/<int:id_reserva>/alumno")
 def api_agregar_alumno(id_reserva):

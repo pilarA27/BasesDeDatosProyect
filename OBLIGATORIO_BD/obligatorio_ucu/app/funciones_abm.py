@@ -68,14 +68,23 @@ def crear_reserva(id_sala, fecha, id_turno, creado_por):
         INSERT INTO reserva (id_sala, fecha, id_turno, creado_por)
         VALUES (%s, %s, %s, %s)
     """
-    return run_query(sql, (id_sala, fecha, id_turno, creado_por))
+    cn = get_connection()
+    try:
+        cur = cn.cursor()
+        cur.execute(sql, (id_sala, fecha, id_turno, creado_por))
+        cn.commit()
+        return cur.lastrowid  
+    finally:
+        cn.close()
+
 
 def agregar_alumno_a_reserva(id_reserva, ci):
     sql = """
-        INSERT INTO reserva_alumno (id_reserva, ci_alumno)
+        INSERT IGNORE INTO reserva_alumno (id_reserva, ci_alumno)
         VALUES (%s, %s)
     """
     return run_query(sql, (id_reserva, ci))
+
 
 def cancelar_reserva(id_reserva):
     run_query("DELETE FROM reserva_alumno WHERE id_reserva=%s", (id_reserva,))

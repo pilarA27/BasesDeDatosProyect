@@ -1,87 +1,83 @@
 USE ucu_salas;
 
--- Facultades
-INSERT INTO facultad (nombre) VALUES 
-('Ingeniería y Tecnologías'), 
-('Ciencias Empresariales');
+-- FACULTADES
+INSERT INTO facultad (nombre) VALUES
+('Ingeniería'),
+('Administración'),
+('Derecho');
 
--- Programas académicos
+-- PROGRAMAS ACADÉMICOS
 INSERT INTO programa_academico (nombre_programa, id_facultad, tipo) VALUES
-('Ing. Informática', 1, 'grado'),
-('MBA', 2, 'posgrado');
+('Ingeniería en Informática', 1, 'grado'),
+('Ingeniería Industrial',      1, 'grado'),
+('MBA',                        2, 'posgrado'),
+('Contador Público',           2, 'grado'),
+('Derecho Penal',              3, 'posgrado');
 
--- Alumnos
+-- ALUMNOS
 INSERT INTO alumno (ci, nombre, apellido, email) VALUES
-('4.111.111-1', 'Ana', 'Pérez', 'ana@ucu.edu.uy'),
-('4.222.222-2', 'Bruno', 'García', 'bruno@ucu.edu.uy'),
-('4.333.333-3', 'Carla', 'López', 'carla@ucu.edu.uy'),
-('5.444.444-4', 'Diego', 'Suárez', 'diego@ucu.edu.uy'),
-('6.555.555-5', 'Elena', 'Ramos', 'elena@ucu.edu.uy'),
-('7.666.666-6', 'Laura', 'Docente', 'laura.doc@ucu.edu.uy');
+('4.111.111-1', 'Juan', 'Pérez', 'juan@ucu.edu.uy'),
+('4.222.222-2', 'María', 'Gómez', 'maria@ucu.edu.uy'),
+('5.333.333-3', 'Pedro', 'López', 'pedro@ucu.edu.uy'),
+('5.444.444-4', 'Lucía', 'Martínez', 'lucia@ucu.edu.uy'),
+('7.666.666-6', 'Ana', 'Rodríguez', 'ana@ucu.edu.uy');
 
--- alumno-programa
+-- RELACIÓN ALUMNO–PROGRAMA
 INSERT INTO alumno_programa_academico (ci_alumno, id_programa, rol) VALUES
 ('4.111.111-1', 1, 'alumno'),
 ('4.222.222-2', 1, 'alumno'),
-('4.333.333-3', 1, 'alumno'),
-('5.444.444-4', 2, 'alumno'),
-('6.555.555-5', 2, 'alumno'),
-('7.666.666-6', 2, 'docente');
+('5.333.333-3', 3, 'alumno'),
+('5.444.444-4', 4, 'alumno'),
+('7.666.666-6', 5, 'alumno');
 
--- Edificios
+-- EDIFICIOS
 INSERT INTO edificio (nombre_edificio, direccion, departamento) VALUES
-('Sede Central', 'Av. 8 de Octubre 2738', 'Montevideo'),
-('Punta Carretas', 'José Ellauri 1234', 'Montevideo');
+('Edificio Central', 'Av. Principal 123', 'Montevideo'),
+('Edificio Norte', 'Calle 456', 'Montevideo');
 
--- Salas
+-- SALAS
 INSERT INTO sala (nombre_sala, id_edificio, capacidad, tipo_sala) VALUES
-('Sala 101', 1, 6, 'libre'),
-('Sala 102', 1, 6, 'libre'),
-('Sala PG 1', 2, 10, 'posgrado'),
-('Sala DOC 1', 1, 8, 'docente'),
-('Sala 201', 2, 6, 'libre');
+('Sala 101', 1, 30, 'libre'),
+('Sala 102', 1, 25, 'libre'),
+('Sala PG 1', 1, 20, 'posgrado'),
+('Sala DOC 1', 2, 15, 'docente'),
+('Sala 201', 2, 35, 'libre');
 
-
---Logins
-INSERT INTO login (correo, contrasena, ci_alumno) VALUES
-('ana@ucu.edu.uy', 'pass', '4.111.111-1'),
-('bruno@ucu.edu.uy', 'pass', '4.222.222-2'),
-('laura.doc@ucu.edu.uy', 'pass', '7.666.666-6');
-
--- GENERAR TURNOS 
+-- TURNOS (solo 1 día para pruebas)
 DELETE FROM turno;
 
-SET @fecha1 = CURDATE();
-SET @fecha2 = DATE_ADD(@fecha1, INTERVAL 1 DAY);
+SET @fecha = '2025-11-25';
 
 INSERT INTO turno (id_sala, fecha, hora_inicio, hora_fin, disponible)
 SELECT 
     s.id_sala,
-    f.fecha,
-    SEC_TO_TIME(TIME_TO_SEC('08:00:00') + h.id_hora * 3600),
-
+    @fecha,
+    ADDTIME('08:00:00', SEC_TO_TIME(hora * 3600)),
+    ADDTIME('09:00:00', SEC_TO_TIME(hora * 3600)),
     1
 FROM sala s
-CROSS JOIN (SELECT @fecha1 AS fecha UNION SELECT @fecha2) f
-CROSS JOIN (
-    SELECT 0 AS id_hora UNION SELECT 1 UNION SELECT 2 UNION SELECT 3 UNION SELECT 4 UNION
-    SELECT 5 UNION SELECT 6 UNION SELECT 7 UNION SELECT 8 UNION SELECT 9 UNION
-    SELECT 10 UNION SELECT 11 UNION SELECT 12 UNION SELECT 13 UNION SELECT 14
-) h;
+CROSS JOIN (SELECT 0 AS hora UNION SELECT 1 UNION SELECT 2 UNION SELECT 3 UNION SELECT 4 UNION SELECT 5) horas;
 
--- Reservas iniciales
-SET @hoy := CURDATE();
+-- RESERVAS
+INSERT INTO reserva (id_sala, fecha, id_turno, estado, creado_por) VALUES
+(1, @fecha, 1, 'activa', '4.111.111-1'),
+(1, @fecha, 2, 'finalizada', '4.111.111-1'),
+(2, @fecha, 3, 'finalizada', '4.222.222-2'),
+(3, @fecha, 4, 'sin_asistencia', '5.333.333-3'),
+(4, @fecha, 5, 'activa', '7.666.666-6'),
+(5, @fecha, 6, 'cancelada', '5.444.444-4');
 
-INSERT INTO reserva (id_sala, fecha, id_turno, creado_por) VALUES
-(1, DATE_ADD(@hoy, INTERVAL 1 DAY), 1, '4.111.111-1'),
-(1, DATE_ADD(@hoy, INTERVAL 1 DAY), 2, '4.111.111-1'),
-(3, DATE_ADD(@hoy, INTERVAL 2 DAY), 3, '5.444.444-4'),
-(4, DATE_ADD(@hoy, INTERVAL 2 DAY), 4, '7.666.666-6');
+-- RESERVA_ALUMNO (ASISTENCIAS)
+INSERT INTO reserva_alumno (id_reserva, ci_alumno, asistencia) VALUES
+(1, '4.111.111-1', 1),
+(2, '4.111.111-1', 1),
+(2, '4.222.222-2', 1),
+(3, '4.222.222-2', 1),
+(4, '5.333.333-3', 0),
+(5, '7.666.666-6', 0),
+(6, '5.444.444-4', 0);
 
--- Alumnos en reservas
-INSERT INTO reserva_alumno (id_reserva, ci_alumno) VALUES
-(1, '4.111.111-1'),
-(1, '4.222.222-2'),
-(2, '4.111.111-1'),
-(3, '5.444.444-4'),
-(4, '7.666.666-6');
+-- SANCIONES
+INSERT INTO sancion_alumno (ci_alumno, fecha_inicio, fecha_fin, motivo, id_reserva) VALUES
+('5.333.333-3', '2025-11-20', '2026-01-20', 'Inasistencia', 4),
+('7.666.666-6', '2025-11-21', '2026-01-21', 'Inasistencia', 5);
