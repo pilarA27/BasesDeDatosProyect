@@ -23,7 +23,7 @@ INSERT INTO alumno (ci, nombre, apellido, email) VALUES
 ('7.666.666-6', 'Ana', 'Rodríguez', 'ana@ucu.edu.uy');
 
 -- RELACIÓN ALUMNO–PROGRAMA
-INSERT INTO alumno_programa_academico (ci_alumno, id_programa, rol) VALUES
+INSERT INTO participante_programa_academico (ci_participante, id_programa, rol) VALUES
 ('4.111.111-1', 1, 'alumno'),
 ('4.222.222-2', 1, 'alumno'),
 ('5.333.333-3', 3, 'alumno'),
@@ -67,8 +67,8 @@ INSERT INTO reserva (id_sala, fecha, id_turno, estado, creado_por) VALUES
 (4, @fecha, 5, 'activa', '7.666.666-6'),
 (5, @fecha, 6, 'cancelada', '5.444.444-4');
 
--- RESERVA_ALUMNO (ASISTENCIAS)
-INSERT INTO reserva_alumno (id_reserva, ci_alumno, asistencia) VALUES
+-- reserva_participante (ASISTENCIAS)
+INSERT INTO reserva_participante (id_reserva, ci_participante, asistencia) VALUES
 (1, '4.111.111-1', 1),
 (2, '4.111.111-1', 1),
 (2, '4.222.222-2', 1),
@@ -78,6 +78,6 @@ INSERT INTO reserva_alumno (id_reserva, ci_alumno, asistencia) VALUES
 (6, '5.444.444-4', 0);
 
 -- SANCIONES
-INSERT INTO sancion_alumno (ci_alumno, fecha_inicio, fecha_fin, motivo, id_reserva) VALUES
+INSERT INTO sancion_alumno (ci_participante, fecha_inicio, fecha_fin, motivo, id_reserva) VALUES
 ('5.333.333-3', '2025-11-20', '2026-01-20', 'Inasistencia', 4),
 ('7.666.666-6', '2025-11-21', '2026-01-21', 'Inasistencia', 5);

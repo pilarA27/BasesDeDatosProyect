@@ -17,14 +17,14 @@ BEGIN
 
   -- ¿Es docente?
   SELECT COUNT(*) INTO v_es_docente
-  FROM alumno_programa_academico ppa
-  WHERE ppa.ci_alumno = p_ci AND ppa.rol = 'docente';
+  FROM participante_programa_academico ppa
+  WHERE ppa.ci_participante = p_ci AND ppa.rol = 'docente';
 
   -- ¿Es alumno de posgrado?
   SELECT COUNT(*) INTO v_es_posgrado
-  FROM alumno_programa_academico ppa
+  FROM participante_programa_academico ppa
   JOIN programa_academico pa ON pa.id_programa = ppa.id_programa
-  WHERE ppa.ci_alumno = p_ci AND ppa.rol='alumno' AND pa.tipo='posgrado';
+  WHERE ppa.ci_participante = p_ci AND ppa.rol='alumno' AND pa.tipo='posgrado';
 
   RETURN (v_tipo='docente' AND v_es_docente>0)
       OR (v_tipo='posgrado' AND v_es_posgrado>0);
@@ -42,7 +42,7 @@ BEGIN
   RETURN EXISTS (
     SELECT 1
     FROM sancion_alumno sa
-    WHERE sa.ci_alumno = p_ci
+    WHERE sa.ci_participante = p_ci
       AND p_fecha BETWEEN sa.fecha_inicio AND sa.fecha_fin
   );
 END$$
@@ -70,10 +70,10 @@ DELIMITER ;
 
 
 -- reserva alumnno
-DROP TRIGGER IF EXISTS bi_reserva_alumno;
+DROP TRIGGER IF EXISTS bi_reserva_participante;
 DELIMITER $$
-CREATE TRIGGER bi_reserva_alumno
-BEFORE INSERT ON reserva_alumno
+CREATE TRIGGER bi_reserva_participante
+BEFORE INSERT ON reserva_participante
 FOR EACH ROW
 BEGIN
   DECLARE v_estado ENUM('activa','cancelada','sin_asistencia','finalizada');
@@ -102,7 +102,7 @@ BEGIN
   END IF;
 
   -- Sanciones
-  IF tiene_sancion_activa_en(NEW.ci_alumno, v_fecha) THEN
+  IF tiene_sancion_activa_en(NEW.ci_participante, v_fecha) THEN
     SIGNAL SQLSTATE '45000'
       SET MESSAGE_TEXT='El alumno tiene una sanción activa';
   END IF;
@@ -114,14 +114,14 @@ BEGIN
   WHERE s.id_sala = v_id_sala;
 
   -- Capacidad
-  IF (SELECT COUNT(*) FROM reserva_alumno ra 
+  IF (SELECT COUNT(*) FROM reserva_participante ra 
       WHERE ra.id_reserva = NEW.id_reserva) >= v_capacidad THEN
     SIGNAL SQLSTATE '45000'
       SET MESSAGE_TEXT='La sala ya está al máximo de capacidad';
   END IF;
 
   -- Exención según tipo de sala
-  SET v_es_exento = es_exento_por_sala(NEW.ci_alumno, v_id_sala);
+  SET v_es_exento = es_exento_por_sala(NEW.ci_participante, v_id_sala);
 
   -- Límites semanales/diarios (solo si NO es exento)
   IF v_es_exento = 0 THEN
@@ -130,8 +130,8 @@ BEGIN
     SELECT COUNT(DISTINCT r2.id_reserva)
       INTO v_semana
     FROM reserva r2
-    JOIN reserva_alumno ra2 ON ra2.id_reserva = r2.id_reserva 
-                           AND ra2.ci_alumno = NEW.ci_alumno
+    JOIN reserva_participante ra2 ON ra2.id_reserva = r2.id_reserva 
+                           AND ra2.ci_participante = NEW.ci_participante
     WHERE r2.estado='activa'
       AND YEARWEEK(r2.fecha, 3) = YEARWEEK(v_fecha, 3);
 
@@ -145,12 +145,12 @@ BEGIN
       INTO v_turnos_dia
     FROM reserva r3
     JOIN sala s3 ON s3.id_sala = r3.id_sala
-    JOIN reserva_alumno ra3 ON ra3.id_reserva = r3.id_reserva
-                           AND ra3.ci_alumno = NEW.ci_alumno
+    JOIN reserva_participante ra3 ON ra3.id_reserva = r3.id_reserva
+                           AND ra3.ci_participante = NEW.ci_participante
     WHERE r3.estado='activa'
       AND r3.fecha = v_fecha
       AND s3.id_edificio = v_id_edificio
-      AND es_exento_por_sala(NEW.ci_alumno, s3.id_sala)=0;
+      AND es_exento_por_sala(NEW.ci_participante, s3.id_sala)=0;
 
     IF v_turnos_dia >= 2 THEN
       SIGNAL SQLSTATE '45000'
@@ -168,11 +168,11 @@ DROP PROCEDURE IF EXISTS registrar_asistencia;
 DELIMITER $$
 CREATE PROCEDURE registrar_asistencia(IN p_id_reserva INT, IN p_ci VARCHAR(20))
 BEGIN
-  UPDATE reserva_alumno
+  UPDATE reserva_participante
      SET asistencia = 1,
          checkin_ts = NOW()
    WHERE id_reserva = p_id_reserva
-     AND ci_alumno = p_ci;
+     AND ci_participante = p_ci;
 END$$
 DELIMITER ;
 
@@ -187,7 +187,7 @@ BEGIN
 
   SELECT COALESCE(SUM(ra.asistencia),0), COUNT(*)
     INTO v_asistentes, v_total
-  FROM reserva_alumno ra
+  FROM reserva_participante ra
   WHERE ra.id_reserva = p_id_reserva;
 
   IF v_total = 0 THEN
@@ -202,10 +202,10 @@ BEGIN
     UPDATE reserva SET estado='sin_asistencia'
     WHERE id_reserva = p_id_reserva;
 
-    INSERT INTO sancion_alumno (ci_alumno, fecha_inicio, fecha_fin, motivo, id_reserva)
-    SELECT ra.ci_alumno, CURRENT_DATE(), DATE_ADD(CURRENT_DATE(), INTERVAL 60 DAY),
+    INSERT INTO sancion_alumno (ci_participante, fecha_inicio, fecha_fin, motivo, id_reserva)
+    SELECT ra.ci_participante, CURRENT_DATE(), DATE_ADD(CURRENT_DATE(), INTERVAL 60 DAY),
            'No-show: reserva sin asistencia', p_id_reserva
-    FROM reserva_alumno ra
+    FROM reserva_participante ra
     WHERE ra.id_reserva = p_id_reserva;
 
   END IF;

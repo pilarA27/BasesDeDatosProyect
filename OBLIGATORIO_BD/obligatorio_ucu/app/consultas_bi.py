@@ -55,9 +55,9 @@ def ejecutar_bi(consulta_id: int):
            ROUND(AVG(cnt),2) AS promedio_participantes
     FROM (
         SELECT r.id_reserva,
-               COUNT(rp.ci_alumno) AS cnt
+               COUNT(rp.ci_participante) AS cnt
         FROM reserva r
-        LEFT JOIN reserva_alumno rp ON rp.id_reserva = r.id_reserva
+        LEFT JOIN reserva_participante rp ON rp.id_reserva = r.id_reserva
         GROUP BY r.id_reserva
     ) x
     JOIN reserva r ON r.id_reserva = x.id_reserva
@@ -76,8 +76,8 @@ def ejecutar_bi(consulta_id: int):
                 f.nombre AS facultad,
                 COUNT(*) AS total_reservas
             FROM reserva r
-            JOIN reserva_alumno rp ON rp.id_reserva = r.id_reserva
-            JOIN alumno_programa_academico ppa ON ppa.ci_alumno = rp.ci_alumno
+            JOIN reserva_participante rp ON rp.id_reserva = r.id_reserva
+            JOIN participante_programa_academico ppa ON ppa.ci_participante = rp.ci_participante
             JOIN programa_academico pa ON pa.id_programa = ppa.id_programa
             JOIN facultad f ON f.id_facultad = pa.id_facultad
             GROUP BY programa, facultad
@@ -112,8 +112,8 @@ def ejecutar_bi(consulta_id: int):
                          ELSE 'alumno_grado' END AS tipo_alumno,
                     rp.asistencia
                 FROM reserva r
-                JOIN reserva_alumno rp ON rp.id_reserva = r.id_reserva
-                JOIN alumno_programa_academico ppa ON ppa.ci_alumno = rp.ci_alumno
+                JOIN reserva_participante rp ON rp.id_reserva = r.id_reserva
+                JOIN participante_programa_academico ppa ON ppa.ci_participante = rp.ci_participante
                 JOIN programa_academico pa ON pa.id_programa = ppa.id_programa
             ) x
             GROUP BY tipo_alumno
@@ -126,7 +126,7 @@ def ejecutar_bi(consulta_id: int):
                      ELSE 'alumno_grado' END AS tipo_alumno,
                 COUNT(*) AS total_sanciones
             FROM sancion_alumno s
-            JOIN alumno_programa_academico ppa ON ppa.ci_alumno = s.ci_alumno
+            JOIN participante_programa_academico ppa ON ppa.ci_participante = s.ci_participante
             JOIN programa_academico pa ON pa.id_programa = ppa.id_programa
             GROUP BY tipo_alumno
             ORDER BY total_sanciones DESC
@@ -148,8 +148,8 @@ def ejecutar_bi(consulta_id: int):
                 a.apellido,
                 COUNT(*) AS total_reservas
             FROM reserva r
-            JOIN reserva_alumno rp ON rp.id_reserva = r.id_reserva
-            JOIN alumno a ON a.ci = rp.ci_alumno
+            JOIN reserva_participante rp ON rp.id_reserva = r.id_reserva
+            JOIN alumno a ON a.ci = rp.ci_participante
             GROUP BY a.ci
             ORDER BY total_reservas DESC
         """,

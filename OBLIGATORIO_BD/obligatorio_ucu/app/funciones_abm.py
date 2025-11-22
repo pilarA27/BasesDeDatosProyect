@@ -80,14 +80,14 @@ def crear_reserva(id_sala, fecha, id_turno, creado_por):
 
 def agregar_alumno_a_reserva(id_reserva, ci):
     sql = """
-        INSERT IGNORE INTO reserva_alumno (id_reserva, ci_alumno)
+        INSERT IGNORE INTO reserva_participante (id_reserva, ci_participante)
         VALUES (%s, %s)
     """
     return run_query(sql, (id_reserva, ci))
 
 
 def cancelar_reserva(id_reserva):
-    run_query("DELETE FROM reserva_alumno WHERE id_reserva=%s", (id_reserva,))
+    run_query("DELETE FROM reserva_participante WHERE id_reserva=%s", (id_reserva,))
 
     sql = "UPDATE reserva SET estado='cancelada' WHERE id_reserva=%s"
     return run_query(sql, (id_reserva,))
@@ -131,9 +131,9 @@ def listar_reservas():
 # ASISTENCIA
 def registrar_asistencia(id_reserva, ci):
     sql = """
-        UPDATE reserva_alumno
+        UPDATE reserva_participante
         SET asistencia = 1, checkin_ts = CURRENT_TIMESTAMP
-        WHERE id_reserva=%s AND ci_alumno=%s
+        WHERE id_reserva=%s AND ci_participante=%s
     """
     return run_query(sql, (id_reserva, ci))
 
@@ -141,7 +141,7 @@ def cerrar_reserva(id_reserva):
     # 1) Verificar asistencia
     sql_asistencia = """
         SELECT SUM(asistencia) AS total_asistencias
-        FROM reserva_alumno
+        FROM reserva_participante
         WHERE id_reserva=%s
     """
     result = run_query(sql_asistencia, (id_reserva,), fetch=True)
@@ -155,8 +155,8 @@ def cerrar_reserva(id_reserva):
     # 2) Generar sanción si nadie fue
     if asistencias == 0:
         sql_alumnos = """
-            SELECT ci_alumno
-            FROM reserva_alumno
+            SELECT ci_participante
+            FROM reserva_participante
             WHERE id_reserva=%s
         """
         alumnos = run_query(sql_alumnos, (id_reserva,), fetch=True)
@@ -166,11 +166,11 @@ def cerrar_reserva(id_reserva):
 
         for p in alumnos:
             sql_sancion = """
-                INSERT INTO sancion_alumno (ci_alumno, fecha_inicio, fecha_fin, motivo, id_reserva)
+                INSERT INTO sancion_alumno (ci_participante, fecha_inicio, fecha_fin, motivo, id_reserva)
                 VALUES (%s, %s, %s, %s, %s)
             """
             run_query(sql_sancion, (
-                p["ci_alumno"],
+                p["ci_participante"],
                 hoy,
                 fin_sancion,
                 "No asiste a una reserva",
@@ -222,10 +222,10 @@ def listar_turnos():
 def listar_sanciones():
     sql = """
         SELECT 
-            s.id_sancion, s.ci_alumno, s.fecha_inicio, s.fecha_fin,
+            s.id_sancion, s.ci_participante, s.fecha_inicio, s.fecha_fin,
             s.motivo, a.nombre, a.apellido
         FROM sancion_alumno s
-        JOIN alumno a ON a.ci = s.ci_alumno
+        JOIN alumno a ON a.ci = s.ci_participante
         ORDER BY s.fecha_inicio DESC
     """
     rows = run_query(sql, fetch=True)

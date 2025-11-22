@@ -173,11 +173,11 @@ def api_agregar_alumno(id_reserva):
     """
     Espera JSON:
     {
-      "ci_alumno": "4.111.111-1"
+      "ci_participante": "4.111.111-1"
     }
     """
     data = request.json
-    agregar_alumno_a_reserva(id_reserva, data["ci_alumno"])
+    agregar_alumno_a_reserva(id_reserva, data["ci_participante"])
     return {"status": "ok"}, 201
 
 @app.put("/api/reservas/<int:id_reserva>/cancelar")
@@ -191,11 +191,11 @@ def api_registrar_asistencia(id_reserva):
     Marca asistencia del alumno en la reserva.
     Espera JSON:
     {
-      "ci_alumno": "4.111.111-1"
+      "ci_participante": "4.111.111-1"
     }
     """
     data = request.json
-    registrar_asistencia(id_reserva, data["ci_alumno"])
+    registrar_asistencia(id_reserva, data["ci_participante"])
     return {"status": "ok"}
 
 @app.post("/api/reservas/<int:id_reserva>/cerrar")

@@ -26,21 +26,21 @@ CREATE TABLE alumno (
   email VARCHAR(150) UNIQUE
 );
 
-CREATE TABLE alumno_programa_academico (
+CREATE TABLE participante_programa_academico (
   id_alumno_programa INT AUTO_INCREMENT PRIMARY KEY,
-  ci_alumno VARCHAR(20) NOT NULL,
+  ci_participante VARCHAR(20) NOT NULL,
   id_programa INT NOT NULL,
   rol ENUM('alumno','docente') NOT NULL,
-  UNIQUE KEY uniq_pp (ci_alumno, id_programa, rol),
-  FOREIGN KEY (ci_alumno) REFERENCES alumno(ci),
+  UNIQUE KEY uniq_pp (ci_participante, id_programa, rol),
+  FOREIGN KEY (ci_participante) REFERENCES alumno(ci),
   FOREIGN KEY (id_programa) REFERENCES programa_academico(id_programa)
 );
 
 CREATE TABLE login (
   correo VARCHAR(150) PRIMARY KEY,
   contrasena VARCHAR(255) NOT NULL,
-  ci_alumno VARCHAR(20) NOT NULL,
-  FOREIGN KEY (ci_alumno) REFERENCES alumno(ci)
+  ci_participante VARCHAR(20) NOT NULL,
+  FOREIGN KEY (ci_participante) REFERENCES alumno(ci)
 );
 
 CREATE TABLE edificio (
@@ -88,27 +88,27 @@ CREATE TABLE reserva (
   FOREIGN KEY (creado_por) REFERENCES alumno(ci)
 );
 
--- TABLA RESERVA_ALUMNO
-CREATE TABLE reserva_alumno (
+-- TABLA reserva_participante
+CREATE TABLE reserva_participante (
   id_reserva INT NOT NULL,
-  ci_alumno VARCHAR(20) NOT NULL,
+  ci_participante VARCHAR(20) NOT NULL,
   fecha_solicitud_reserva TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
   asistencia TINYINT(1) NOT NULL DEFAULT 0,
   checkin_ts TIMESTAMP NULL,
-  PRIMARY KEY (id_reserva, ci_alumno),
+  PRIMARY KEY (id_reserva, ci_participante),
   FOREIGN KEY (id_reserva) REFERENCES reserva(id_reserva) ON DELETE CASCADE,
-  FOREIGN KEY (ci_alumno) REFERENCES alumno(ci)
+  FOREIGN KEY (ci_participante) REFERENCES alumno(ci)
 );
 
 -- TABLA SANCIONES
 CREATE TABLE sancion_alumno (
   id_sancion INT AUTO_INCREMENT PRIMARY KEY,
-  ci_alumno VARCHAR(20) NOT NULL,
+  ci_participante VARCHAR(20) NOT NULL,
   fecha_inicio DATE NOT NULL,
   fecha_fin DATE NOT NULL,
   motivo VARCHAR(255) NOT NULL,
   id_reserva INT NULL,
-  FOREIGN KEY (ci_alumno) REFERENCES alumno(ci),
+  FOREIGN KEY (ci_participante) REFERENCES alumno(ci),
   FOREIGN KEY (id_reserva) REFERENCES reserva(id_reserva),
   CHECK (fecha_fin > fecha_inicio)
 );
@@ -116,5 +116,5 @@ CREATE TABLE sancion_alumno (
 -- IndiES
 CREATE INDEX idx_reserva_fecha ON reserva(fecha);
 CREATE INDEX idx_reserva_estado ON reserva(estado);
-CREATE INDEX idx_rp_ci ON reserva_alumno(ci_alumno);
-CREATE INDEX idx_sancion_ci ON sancion_alumno(ci_alumno);
+CREATE INDEX idx_rp_ci ON reserva_participante(ci_participante);
+CREATE INDEX idx_sancion_ci ON sancion_alumno(ci_participante);

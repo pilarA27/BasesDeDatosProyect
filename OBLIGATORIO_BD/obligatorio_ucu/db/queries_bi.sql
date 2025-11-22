@@ -18,9 +18,9 @@ ORDER BY total DESC;
 -- 3. Promedio de alumnos por sala
 SELECT s.nombre_sala, AVG(cnt) AS promedio_alumnos
 FROM (
-  SELECT r.id_reserva, COUNT(rp.ci_alumno) AS cnt
+  SELECT r.id_reserva, COUNT(rp.ci_participante) AS cnt
   FROM reserva r
-  LEFT JOIN reserva_alumno rp ON rp.id_reserva=r.id_reserva
+  LEFT JOIN reserva_participante rp ON rp.id_reserva=r.id_reserva
   GROUP BY r.id_reserva
 ) x
 JOIN reserva r ON r.id_reserva = x.id_reserva
@@ -31,8 +31,8 @@ ORDER BY promedio_alumnos DESC;
 -- 4. Cantidad de reservas por carrera y facultad
 SELECT pa.nombre_programa, f.nombre AS facultad, COUNT(*) total
 FROM reserva r
-JOIN reserva_alumno rp ON rp.id_reserva=r.id_reserva
-JOIN alumno_programa_academico ppa ON ppa.ci_alumno=rp.ci_alumno
+JOIN reserva_participante rp ON rp.id_reserva=r.id_reserva
+JOIN participante_programa_academico ppa ON ppa.ci_participante=rp.ci_participante
 JOIN programa_academico pa ON pa.id_programa=ppa.id_programa
 JOIN facultad f ON f.id_facultad=pa.id_facultad
 GROUP BY pa.nombre_programa, f.nombre
@@ -75,8 +75,8 @@ FROM (
          r.id_reserva,
          SUM(rp.asistencia) AS asistencias
   FROM reserva r
-  JOIN reserva_alumno rp ON rp.id_reserva=r.id_reserva
-  JOIN alumno_programa_academico ppa ON ppa.ci_alumno=rp.ci_alumno
+  JOIN reserva_participante rp ON rp.id_reserva=r.id_reserva
+  JOIN participante_programa_academico ppa ON ppa.ci_participante=rp.ci_participante
   JOIN programa_academico pa ON pa.id_programa=ppa.id_programa
   GROUP BY tipo_alumno, r.id_reserva
 )
@@ -107,7 +107,7 @@ ORDER BY total DESC;
 -- 10. Carreras con más sanciones
 SELECT pa.nombre_programa, COUNT(*) AS total_sanciones
 FROM sancion_alumno s
-JOIN alumno_programa_academico ppa ON ppa.ci_alumno=s.ci_alumno
+JOIN participante_programa_academico ppa ON ppa.ci_participante=s.ci_participante
 JOIN programa_academico pa ON pa.id_programa=ppa.id_programa
 GROUP BY pa.nombre_programa
 ORDER BY total_sanciones DESC;
@@ -121,7 +121,7 @@ ORDER BY total_reservas DESC;
 -- 12. Ranking de alumnos más activos (más reservas realizadas)   
 SELECT a.ci, a.nombre, a.apellido, COUNT(*) AS total_reservas
 FROM reserva r
-JOIN reserva_alumno rp ON rp.id_reserva=r.id_reserva
-JOIN alumno a ON a.ci = rp.ci_alumno
+JOIN reserva_participante rp ON rp.id_reserva=r.id_reserva
+JOIN alumno a ON a.ci = rp.ci_participante
 GROUP BY a.ci, a.nombre, a.apellido
 ORDER BY total_reservas DESC;

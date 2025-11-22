@@ -110,12 +110,12 @@ async function listarReservas() {
 
 async function confirmarAsistencia() {
   const id_reserva = prompt("ID de la reserva:");
-  const ci_alumno = prompt("CI del alumno:");
+  const ci_participante = prompt("CI del alumno:");
 
   await fetch(`${API}/reservas/${id_reserva}/asistencia`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ ci_alumno }),
+    body: JSON.stringify({ ci_participante }),
   });
 
   alert("Asistencia registrada");
