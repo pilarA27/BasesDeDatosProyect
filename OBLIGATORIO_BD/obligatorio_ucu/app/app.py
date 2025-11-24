@@ -1,15 +1,12 @@
 from flask import Flask, jsonify, request
 from flask_cors import CORS
+from datetime import date, timedelta
 
 from db_config import get_connection
 
-
 from funciones_abm import (
-    # ALUMNOS
     listar_alumnos, alta_alumno, eliminar_alumno, modificar_alumno,
-    # SALAS
     listar_salas, alta_sala, eliminar_sala, modificar_sala,
-    # RESERVAS / ASISTENCIA / SANCIONES
     crear_reserva, agregar_alumno_a_reserva, cancelar_reserva,
     listar_reservas, registrar_asistencia, cerrar_reserva,
     listar_sanciones, listar_turnos,
@@ -17,22 +14,71 @@ from funciones_abm import (
 
 from consultas_bi import ejecutar_bi
 
-app = Flask(__name__)
 
+app = Flask(__name__)
 CORS(app, resources={r"/api/*": {"origins": "*"}})
+
+
+# ================================================================
+#   GENERAR TURNOS AUTOMÁTICAMENTE
+# ================================================================
+def generar_turnos_auto():
+    cn = get_connection()
+    cur = cn.cursor()
+
+    hoy = date.today()
+
+    cur.execute("SELECT id_sala FROM sala")
+    salas = [row[0] for row in cur.fetchall()]
+
+    for id_sala in salas:
+        for d in range(7):  # 7 días hacia adelante
+            fecha = hoy + timedelta(days=d)
+
+            for h in range(15):  # 08:00 -> 23:00 (bloques de 1h)
+                cur.execute(
+                    """
+                    SELECT 1 FROM turno
+                    WHERE id_sala=%s AND fecha=%s
+                    AND hora_inicio = ADDTIME('08:00:00', SEC_TO_TIME(%s*3600))
+                    """,
+                    (id_sala, fecha, h)
+                )
+                if cur.fetchone():
+                    continue
+
+                cur.execute(
+                    """
+                    INSERT INTO turno (id_sala, fecha, hora_inicio, hora_fin, disponible)
+                    VALUES (
+                        %s, %s,
+                        ADDTIME('08:00:00', SEC_TO_TIME(%s*3600)),
+                        ADDTIME('09:00:00', SEC_TO_TIME(%s*3600)),
+                        1
+                    )
+                    """,
+                    (id_sala, fecha, h, h)
+                )
+
+    cn.commit()
+    cn.close()
+    print("TURNOS → Generados correctamente.")
+
 
 @app.after_request
 def add_cors_headers(response):
     response.headers["Access-Control-Allow-Origin"] = "*"
-    response.headers["Access-Control-Allow-Headers"] = "Content-Type, Authorization"
-    response.headers["Access-Control-Allow-Methods"] = "GET, POST, PUT, DELETE, OPTIONS"
+    response.headers["Access-Control-Allow-Headers"] = "*"
+    response.headers["Access-Control-Allow-Methods"] = "*"
     return response
 
-# ALUMNOS
+
+# ================================================================
+#   ALUMNOS
+# ================================================================
 @app.get("/api/alumnos")
 def api_listar_alumnos():
-    alumnos = listar_alumnos()
-    return jsonify(alumnos)
+    return jsonify(listar_alumnos())
 
 @app.post("/api/alumnos")
 def api_alta_alumno():
@@ -50,30 +96,20 @@ def api_modificar_alumno(ci):
 def api_eliminar_alumno(ci):
     eliminar_alumno(ci)
     return {"status": "ok"}
- 
-# SALAS
+
+
+# ================================================================
+#   SALAS
+# ================================================================
 @app.get("/api/salas")
 def api_listar_salas():
-    salas = listar_salas()
-    return jsonify(salas)
+    return jsonify(listar_salas())
 
 @app.post("/api/salas")
 def api_alta_sala():
     data = request.json
-    alta_sala(
-        data["nombre_sala"],
-        data["id_edificio"],
-        data["capacidad"],
-        data["tipo_sala"],
-    )
+    alta_sala(data["nombre_sala"], data["id_edificio"], data["capacidad"], data["tipo_sala"])
     return {"status": "ok"}, 201
-
-    # TURNOS
-@app.get("/api/turnos")
-def api_listar_turnos():
-    turnos = listar_turnos()
-    return jsonify(turnos)
-
 
 @app.put("/api/salas/<int:id_sala>")
 def api_modificar_sala(id_sala):
@@ -92,7 +128,15 @@ def api_eliminar_sala(id_sala):
     eliminar_sala(id_sala)
     return {"status": "ok"}
 
-    # TURNOS DISPONIBLES (por sala + fecha, excluye reservados)
+
+# ================================================================
+#   TURNOS
+# ================================================================
+@app.get("/api/turnos")
+def api_listar_turnos():
+    return jsonify(listar_turnos())
+
+
 @app.get("/api/turnos_disponibles")
 def api_turnos_disponibles():
     id_sala = request.args.get("id_sala", type=int)
@@ -100,85 +144,53 @@ def api_turnos_disponibles():
 
     sql = """
         SELECT 
-            t.id_turno,
-            t.hora_inicio,
-            t.hora_fin,
+            t.id_turno, t.hora_inicio, t.hora_fin,
             DAYNAME(t.fecha) AS dia_en_ing
         FROM turno t
-        WHERE 
-            t.id_sala = %s
-            AND t.fecha = %s
-            AND t.disponible = 1
-            AND t.id_turno NOT IN (
-                SELECT id_turno
-                FROM reserva
-                WHERE fecha = %s AND id_sala = %s
-            )
+        WHERE t.id_sala=%s AND t.fecha=%s AND t.disponible=1
+        AND t.id_turno NOT IN (
+            SELECT id_turno FROM reserva WHERE fecha=%s AND id_sala=%s
+        )
         ORDER BY t.hora_inicio
     """
 
     cn = get_connection()
-    try:
-        cur = cn.cursor(dictionary=True)
-        cur.execute(sql, (id_sala, fecha, fecha, id_sala))
-        rows = cur.fetchall()
+    cur = cn.cursor(dictionary=True)
+    cur.execute(sql, (id_sala, fecha, fecha, id_sala))
+    rows = cur.fetchall()
+    cn.close()
 
-        dias_es = {
-            "Monday": "Lunes",
-            "Tuesday": "Martes",
-            "Wednesday": "Miércoles",
-            "Thursday": "Jueves",
-            "Friday": "Viernes",
-            "Saturday": "Sábado",
-            "Sunday": "Domingo",
-        }
+    dias_es = {
+        "Monday": "Lunes", "Tuesday": "Martes", "Wednesday": "Miércoles",
+        "Thursday": "Jueves", "Friday": "Viernes", "Saturday": "Sábado", "Sunday": "Domingo"
+    }
 
-        for r in rows:
-            r["hora_inicio"] = str(r["hora_inicio"])
-            r["hora_fin"] = str(r["hora_fin"])
-            r["dia"] = dias_es.get(r["dia_en_ing"], r["dia_en_ing"])
-            del r["dia_en_ing"]
+    for r in rows:
+        r["hora_inicio"] = str(r["hora_inicio"])
+        r["hora_fin"] = str(r["hora_fin"])
+        r["dia"] = dias_es.get(r["dia_en_ing"], r["dia_en_ing"])
+        del r["dia_en_ing"]
 
-        return jsonify(rows)
-    finally:
-        cn.close()
+    return jsonify(rows)
 
 
-# RESERVAS
+# ================================================================
+#   RESERVAS
+# ================================================================
 @app.get("/api/reservas")
 def api_listar_reservas():
-    reservas = listar_reservas()
-    return jsonify(reservas)
+    return jsonify(listar_reservas())
 
 @app.post("/api/reservas")
 def api_crear_reserva():
     data = request.json
 
-    # 1) Crear reserva
     nuevo_id = crear_reserva(
-        data["id_sala"],
-        data["fecha"],
-        data["id_turno"],
-        data["creado_por"],
+        data["id_sala"], data["fecha"], data["id_turno"], data["creado_por"]
     )
 
-    # 2) Agregar automáticamente al creador como participante
     agregar_alumno_a_reserva(nuevo_id, data["creado_por"])
-
     return {"status": "ok", "id_reserva": nuevo_id}, 201
-
-
-@app.post("/api/reservas/<int:id_reserva>/alumno")
-def api_agregar_alumno(id_reserva):
-    """
-    Espera JSON:
-    {
-      "ci_alumno": "4.111.111-1"
-    }
-    """
-    data = request.json
-    agregar_alumno_a_reserva(id_reserva, data["ci_alumno"])
-    return {"status": "ok"}, 201
 
 @app.put("/api/reservas/<int:id_reserva>/cancelar")
 def api_cancelar_reserva(id_reserva):
@@ -186,50 +198,41 @@ def api_cancelar_reserva(id_reserva):
     return {"status": "ok"}
 
 @app.post("/api/reservas/<int:id_reserva>/asistencia")
-def api_registrar_asistencia(id_reserva):
-    """
-    Marca asistencia del alumno en la reserva.
-    Espera JSON:
-    {
-      "ci_alumno": "4.111.111-1"
-    }
-    """
+def api_asistencia(id_reserva):
     data = request.json
     registrar_asistencia(id_reserva, data["ci_alumno"])
     return {"status": "ok"}
 
 @app.post("/api/reservas/<int:id_reserva>/cerrar")
 def api_cerrar_reserva(id_reserva):
-    """
-    Cierra la reserva:
-    - Si hubo al menos una asistencia -> estado = 'finalizada'
-    - Si no hubo asistencia -> estado = 'sin_asistencia' + genera sanciones
-    """
     cerrar_reserva(id_reserva)
     return {"status": "ok"}
 
 
-# SANCIONES
+# ================================================================
+#   SANCIONES
+# ================================================================
 @app.get("/api/sanciones")
-def api_listar_sanciones():
-    sanciones = listar_sanciones()
-    return jsonify(sanciones)
+def api_sanciones():
+    return jsonify(listar_sanciones())
 
-# CONSULTAS BI
+
+# ================================================================
+#   CONSULTAS BI
+# ================================================================
 @app.get("/api/bi/<int:consulta_id>")
-def api_bi(consulta_id: int):
-    """
-    Ejecuta las consultas BI definidas en consultas_bi.py.
-    Por ejemplo:
-    - /api/bi/1 -> salas más reservadas
-    - /api/bi/2 -> turnos más demandados
-    """
+def api_bi(consulta_id):
     try:
-        resultado = ejecutar_bi(consulta_id)
-        return jsonify(resultado)
+        return jsonify(ejecutar_bi(consulta_id))
     except ValueError as e:
         return {"error": str(e)}, 400
 
-# MAIN
+
+# ================================================================
+#   MAIN
+# ================================================================
 if __name__ == "__main__":
+    with app.app_context():
+        generar_turnos_auto()
+
     app.run(port=5000, debug=True)

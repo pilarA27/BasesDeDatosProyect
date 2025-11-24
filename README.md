@@ -18,6 +18,13 @@ OBLIGATORIO_BD/
     ├── frontend/     # Frontend
 
 
+# Datos de prueba 
+Antes de iniciar la aplicación cargar la base de datos.
+1. Abrir MySQL Workbench o consola.
+2. Ejecutar la información de Insert.sql
+3. Ejecutar la información en triggers.sql
+
+
 ## Cómo ejecutar el backend
 cd OBLIGATORIO_BD
 cd obligatorio_ucu
@@ -37,10 +44,6 @@ El frontend queda disponible en:
 http://localhost:3000
 
 
-# Datos de prueba (IMPORTANTE)
-Antes de iniciar la aplicación cargar la base de datos.
-1. Abrir MySQL Workbench o consola.
-2. Ejecutar la información de Insert.sql
 
 
 ## Fin

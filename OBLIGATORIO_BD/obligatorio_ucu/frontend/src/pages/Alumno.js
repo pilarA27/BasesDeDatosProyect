@@ -16,6 +16,7 @@ export default function Alumno() {
     onConfirm: null,
   });
 
+  // Modal helpers
   const openModal = (title, content = null, showInput = false, onConfirm = null) => {
     setModal({
       open: true,

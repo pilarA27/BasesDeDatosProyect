@@ -1,3 +1,4 @@
+/* CONTENEDOR PRINCIPAL */
 .admin-container {
   padding: 20px;
   text-align: center;
@@ -7,6 +8,7 @@
   margin-bottom: 20px;
 }
 
+/* LAYOUT DE SECCIONES */
 .admin-row {
   display: flex;
   flex-direction: row;
@@ -16,6 +18,7 @@
   width: 100%;
 }
 
+/* CAJAS DE BOTONES */
 .button-box {
   background: #f7f7f7;
   padding: 15px;
@@ -47,6 +50,90 @@
   background-color: #153119;
 }
 
+/* MODAL GENERAL */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0,0,0,0.45);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 999;
+}
+
+.modal {
+  background: white;
+  width: 350px;
+  padding: 20px;
+  border-radius: 15px;
+  text-align: center;
+  animation: fadeIn 0.25s ease-in-out;
+}
+
+/* INPUTS DE LOS FORMULARIOS */
+.form-box {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin: 15px 0;
+}
+
+.form-box input {
+  padding: 10px;
+  border: 1px solid #ccc;
+  border-radius: 8px;
+  width: 100%;
+  font-size: 14px;
+}
+
+/* BOTONES DEL MODAL */
+.confirm-btn {
+  width: 100%;
+  padding: 10px;
+  background: #234e28;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  margin-top: 15px;
+}
+
+.confirm-btn:hover {
+  background: #153119;
+}
+
+.close-btn {
+  width: 100%;
+  padding: 10px;
+  background: #666;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  margin-top: 10px;
+}
+
+.close-btn:hover {
+  background: #444;
+}
+
+/* LISTADOS (ALUMNOS, SALAS, RESERVAS, ETC.) */
+.list-scroll {
+  max-height: 250px;
+  overflow-y: auto;
+  text-align: left;
+  padding-right: 5px;
+}
+
+.list-item {
+  padding: 8px 0;
+  border-bottom: 1px solid #ddd;
+}
+
+/* PANTALLA DE CONSULTAS BI */
 .consultas-overlay {
   position: fixed;
   top: 0;
@@ -70,11 +157,6 @@
   animation: fadeIn 0.25s ease-in-out;
 }
 
-@keyframes fadeIn {
-  from { transform: scale(0.9); opacity: 0; }
-  to   { transform: scale(1); opacity: 1; }
-}
-
 .consultas-list {
   display: flex;
   flex-wrap: wrap;
@@ -83,6 +165,7 @@
   justify-content: center;
 }
 
+/* BOTONES DE CONSULTAS */
 .consulta-btn {
   padding: 10px 12px;
   background-color: #234e28;
@@ -98,6 +181,7 @@
   background-color: #153119;
 }
 
+/* TABLAS BI */
 .result-table {
   width: 100%;
   margin-top: 20px;
@@ -115,6 +199,7 @@
   font-weight: bold;
 }
 
+/* BOTÓN CERRAR CONSULTAS */
 .close-consultas-btn {
   margin-top: 20px;
   padding: 10px 15px;
@@ -127,4 +212,10 @@
 
 .close-consultas-btn:hover {
   background-color: #153119;
+}
+
+/* ANIMACIÓN */
+@keyframes fadeIn {
+  from { transform: scale(0.9); opacity: 0; }
+  to   { transform: scale(1); opacity: 1; }
 }
