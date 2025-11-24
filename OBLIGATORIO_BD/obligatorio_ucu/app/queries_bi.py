@@ -116,14 +116,30 @@ def ejecutar_bi(consulta_id: int):
             ORDER BY total_sanciones DESC
         """,
 
-        # 8) Porcentaje de reservas utilizadas vs canceladas / sin asistencia
+        # 8) Porcentaje de reservas utilizadas vs canceladas/no asistidas + activas
         8: """
-            SELECT estado,
-                   COUNT(*) AS total
-            FROM reserva
-            GROUP BY estado
+            SELECT 
+                categoria,
+                COUNT(*) AS total,
+                ROUND(
+                    100 * COUNT(*) / (SELECT COUNT(*) FROM reserva),
+                    2
+                ) AS porcentaje
+            FROM (
+                SELECT CASE 
+                         WHEN estado = 'finalizada' THEN 'utilizada'
+                         WHEN estado IN ('cancelada','sin_asistencia') THEN 'no_utilizada'
+                         WHEN estado = 'activa' THEN 'activas'
+                       END AS categoria
+                FROM reserva
+            ) x
+            GROUP BY categoria
             ORDER BY total DESC
         """,
+
+
+
+
 
         # 9) Ranking de alumnos con más reservas
         9: """
@@ -149,16 +165,26 @@ def ejecutar_bi(consulta_id: int):
             ORDER BY total_reservas DESC
         """,
 
-        # 11) Salas más utilizadas por día de la semana
+                # 11) Salas más utilizadas por día de la semana (en español)
         11: """
-            SELECT s.nombre_sala,
-                   DAYNAME(r.fecha) AS dia_semana,
-                   COUNT(*) AS total
+            SELECT 
+                s.nombre_sala,
+                CASE 
+                    WHEN DAYOFWEEK(r.fecha) = 1 THEN 'Domingo'
+                    WHEN DAYOFWEEK(r.fecha) = 2 THEN 'Lunes'
+                    WHEN DAYOFWEEK(r.fecha) = 3 THEN 'Martes'
+                    WHEN DAYOFWEEK(r.fecha) = 4 THEN 'Miércoles'
+                    WHEN DAYOFWEEK(r.fecha) = 5 THEN 'Jueves'
+                    WHEN DAYOFWEEK(r.fecha) = 6 THEN 'Viernes'
+                    WHEN DAYOFWEEK(r.fecha) = 7 THEN 'Sábado'
+                END AS dia_semana,
+                COUNT(*) AS total
             FROM reserva r
             JOIN sala s ON s.id_sala = r.id_sala
             GROUP BY s.nombre_sala, dia_semana
             ORDER BY total DESC
         """,
+
     }
 
     sql = consultas.get(consulta_id)

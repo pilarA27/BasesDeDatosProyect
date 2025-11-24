@@ -12,8 +12,7 @@ from funciones_abm import (
     listar_sanciones, listar_turnos,
 )
 
-from consultas_bi import ejecutar_bi
-
+from queries_bi import ejecutar_bi
 
 app = Flask(__name__)
 CORS(app, resources={r"/api/*": {"origins": "*"}})

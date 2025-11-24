@@ -130,9 +130,10 @@ async function listarSanciones() {
 }
 
 //consultas bi
-async function ejecutarConsulta(id, setResultado) {
+async function ejecutarConsulta(id, setResultado, setConsultaActiva) {
   const res = await fetch(`${API}/bi/${id}`);
   const data = await res.json();
+  setConsultaActiva(id);
   setResultado(data);
 }
 
@@ -140,6 +141,7 @@ async function ejecutarConsulta(id, setResultado) {
 export default function Administrador() {
   const [pantallaBI, setPantallaBI] = useState(false);
   const [resultado, setResultado] = useState(null);
+  const [consultaActiva, setConsultaActiva] = useState(null);
 
   const consultas = [
     "Salas más reservadas",
@@ -152,16 +154,14 @@ export default function Administrador() {
     "Porcentaje de reservas efectivamente utilizadas vs. canceladas/no asistidas",
     "Ranking alumnos más activos",
     "Ranking de tipo de edificios más utilizados",
-    "Reservas por sala por dia de la seman",
-    "FALTA",
+    "Reservas por sala por día de la semana",
   ];
 
-//pantalla bi
+  //pantalla bi
   if (pantallaBI) {
     return (
       <div className="consultas-overlay">
         <div className="consultas-panel">
-
           <h2>Consultas BI</h2>
 
           <div className="consultas-list">
@@ -169,33 +169,61 @@ export default function Administrador() {
               <button
                 key={i}
                 className="consulta-btn"
-                onClick={() => ejecutarConsulta(i + 1, setResultado)}
+                onClick={() =>
+                  ejecutarConsulta(i + 1, setResultado, setConsultaActiva)
+                }
               >
                 {t}
               </button>
             ))}
           </div>
 
-          {resultado && (
-            <table className="result-table">
-              <thead>
-                <tr>
-                  {Object.keys(resultado[0] || {}).map((col) => (
-                    <th key={col}>{col}</th>
+          {resultado && resultado.length > 0 && (
+            consultaActiva === 8 ? (
+              // Vista custom para la consulta 8 (opción B: utilizada vs no_utilizada)
+              <table className="result-table">
+                <thead>
+                  <tr>
+                    <th>Categoría</th>
+                    <th>Total</th>
+                    <th>% sobre el total</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {resultado.map((row, i) => (
+                    <tr key={i}>
+                      <td>{row.categoria}</td>
+                      <td>{row.total}</td>
+                      <td>{row.porcentaje}%</td>
+                    </tr>
                   ))}
-                </tr>
-              </thead>
-
-              <tbody>
-                {resultado.map((fila, i) => (
-                  <tr key={i}>
-                    {Object.values(fila).map((val, j) => (
-                      <td key={j}>{val}</td>
+                </tbody>
+              </table>
+            ) : (
+              // Vista genérica para las demás consultas
+              <table className="result-table">
+                <thead>
+                  <tr>
+                    {Object.keys(resultado[0] || {}).map((col) => (
+                      <th key={col}>{col}</th>
                     ))}
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody>
+                  {resultado.map((fila, i) => (
+                    <tr key={i}>
+                      {Object.values(fila).map((val, j) => (
+                        <td key={j}>{val}</td>
+                      ))}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )
+          )}
+
+          {resultado && resultado.length === 0 && (
+            <p>No hay datos para esta consulta.</p>
           )}
 
           <button
@@ -203,6 +231,7 @@ export default function Administrador() {
             onClick={() => {
               setPantallaBI(false);
               setResultado(null);
+              setConsultaActiva(null);
             }}
           >
             Cerrar
@@ -220,7 +249,6 @@ export default function Administrador() {
       <h1>Administración</h1>
 
       <div className="admin-row">
-
         <div className="button-box">
           <div>Alumnos</div>
           <button onClick={crearAlumno}>Crear</button>
@@ -261,7 +289,6 @@ export default function Administrador() {
             Atrás
           </button>
         </div>
-
       </div>
     </div>
   );
