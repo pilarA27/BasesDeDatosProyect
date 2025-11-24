@@ -43,22 +43,47 @@ INSERT INTO sala (nombre_sala, id_edificio, capacidad, tipo_sala) VALUES
 ('Sala DOC 1', 2, 15, 'docente'),
 ('Sala 201', 2, 35, 'libre');
 
--- TURNOS (solo 1 día para pruebas)
+
+/* ======================================================
+   TURNOS AUTOMÁTICOS POR 7 DÍAS, INCLUYENDO FINES
+   08:00 → 23:00 EN BLOQUES DE 1 HORA
+   ====================================================== */
+
 DELETE FROM turno;
 
-SET @fecha = '2025-11-25';
+SET @dias_hacia_adelante = 7;
+SET @hora_inicio = 8;
+SET @hora_fin = 23;
 
+WITH RECURSIVE fechas AS (
+    SELECT CURDATE() AS fecha
+    UNION ALL
+    SELECT fecha + INTERVAL 1 DAY
+    FROM fechas
+    WHERE fecha < CURDATE() + INTERVAL @dias_hacia_adelante DAY
+),
+horas AS (
+    SELECT @hora_inicio AS h
+    UNION ALL
+    SELECT h + 1 FROM horas WHERE h < @hora_fin - 1
+)
 INSERT INTO turno (id_sala, fecha, hora_inicio, hora_fin, disponible)
 SELECT 
     s.id_sala,
-    @fecha,
-    ADDTIME('08:00:00', SEC_TO_TIME(hora * 3600)),
-    ADDTIME('09:00:00', SEC_TO_TIME(hora * 3600)),
+    f.fecha,
+    MAKETIME(h.h,   0, 0),
+    MAKETIME(h.h+1, 0, 0),
     1
 FROM sala s
-CROSS JOIN (SELECT 0 AS hora UNION SELECT 1 UNION SELECT 2 UNION SELECT 3 UNION SELECT 4 UNION SELECT 5) horas;
+CROSS JOIN fechas f
+CROSS JOIN horas h;
 
--- RESERVAS
+
+
+
+-- RESERVAS DE PRUEBA (día viejo original)
+SET @fecha = '2025-11-25';
+
 INSERT INTO reserva (id_sala, fecha, id_turno, estado, creado_por) VALUES
 (1, @fecha, 1, 'activa', '4.111.111-1'),
 (1, @fecha, 2, 'finalizada', '4.111.111-1'),
@@ -67,7 +92,7 @@ INSERT INTO reserva (id_sala, fecha, id_turno, estado, creado_por) VALUES
 (4, @fecha, 5, 'activa', '7.666.666-6'),
 (5, @fecha, 6, 'cancelada', '5.444.444-4');
 
--- RESERVA_ALUMNO (ASISTENCIAS)
+-- RESERVA_ALUMNO
 INSERT INTO reserva_alumno (id_reserva, ci_alumno, asistencia) VALUES
 (1, '4.111.111-1', 1),
 (2, '4.111.111-1', 1),

@@ -76,11 +76,14 @@ export default function Alumno() {
     cargarReservas();
   }, []);
 
-  const cargarReservas = () => {
-    fetch("http://localhost:5000/api/reservas")
-      .then((res) => res.json())
-      .then((data) => setReservas(data))
-      .catch(() => setReservas([]));
+  const cargarReservas = async () => {
+    try {
+      const res = await fetch("http://localhost:5000/api/reservas");
+      const data = await res.json();
+      setReservas(data);
+    } catch {
+      setReservas([]);
+    }
   };
 
   // -------------------------
@@ -112,40 +115,37 @@ export default function Alumno() {
     );
   };
 
- const pedirTurno = async (id_sala, fecha) => {
-  try {
-    const res = await fetch(
-      `http://localhost:5000/api/turnos_disponibles?id_sala=${id_sala}&fecha=${fecha}`
-    );
+  const pedirTurno = async (id_sala, fecha) => {
+    try {
+      const res = await fetch(
+        `http://localhost:5000/api/turnos_disponibles?id_sala=${id_sala}&fecha=${fecha}`
+      );
 
-    const turnosDisp = await res.json();
+      const turnosDisp = await res.json();
 
-    if (turnosDisp.length === 0) {
-      openModal("Sin turnos", <p>No hay turnos disponibles para esa fecha.</p>);
-      return;
+      if (turnosDisp.length === 0) {
+        openModal("Sin turnos", <p>No hay turnos disponibles para esa fecha.</p>);
+        return;
+      }
+
+      openModal(
+        `Turnos disponibles — ${fechaLinda(fecha)}`,
+        <ul className="salas-list">
+          {turnosDisp.map((t) => (
+            <li
+              key={t.id_turno}
+              style={{ cursor: "pointer", padding: "8px 0" }}
+              onClick={() => pedirCI(id_sala, fecha, t.id_turno)}
+            >
+              <strong>{t.hora_inicio}</strong> a <strong>{t.hora_fin}</strong> — {t.dia}
+            </li>
+          ))}
+        </ul>
+      );
+    } catch {
+      openModal("Error", <p>No se pudieron cargar los turnos.</p>);
     }
-
-    openModal(
-      `Turnos disponibles — ${fechaLinda(fecha)}`,
-      <ul className="salas-list">
-        {turnosDisp.map((t) => (
-          <li
-            key={t.id_turno}
-            style={{ cursor: "pointer", padding: "8px 0" }}
-            onClick={() => pedirCI(id_sala, fecha, t.id_turno)}
-          >
-            <strong>{t.hora_inicio}</strong> a <strong>{t.hora_fin}</strong>
-            {" – "}
-            {t.dia}
-          </li>
-        ))}
-      </ul>
-    );
-  } catch {
-    openModal("Error", <p>No se pudieron cargar los turnos.</p>);
-  }
-};
-
+  };
 
   const pedirCI = (id_sala, fecha, id_turno) => {
     openModal(
@@ -171,7 +171,7 @@ export default function Alumno() {
 
       if (!res.ok) throw new Error();
 
-      cargarReservas();
+      await cargarReservas();
       openModal("Reserva creada", <p>La reserva fue creada correctamente.</p>);
     } catch {
       openModal("Error", <p>No se pudo crear la reserva.</p>);
@@ -179,15 +179,17 @@ export default function Alumno() {
   };
 
   // -------------------------
-  // CANCELAR RESERVA
+  // CANCELAR RESERVA (ARREGLADO!!)
   // -------------------------
-  const handleCancelar = () => {
-    cargarReservas();
-    setTimeout(() => {
-      openModal(
-        "Elegí la reserva a cancelar",
-        <ul className="salas-list">
-          {reservas.map((r) => (
+  const handleCancelar = async () => {
+    await cargarReservas();  // 👈 se espera el fetch REAL
+
+    openModal(
+      "Elegí la reserva a cancelar",
+      <ul className="salas-list">
+        {reservas
+          .filter((r) => r.estado === "activa")
+          .map((r) => (
             <li
               key={r.id_reserva}
               style={{ cursor: "pointer", padding: "8px 0" }}
@@ -198,9 +200,8 @@ export default function Alumno() {
               {fechaLinda(r.fecha)} — {r.hora_inicio} a {r.hora_fin}
             </li>
           ))}
-        </ul>
-      );
-    }, 150);
+      </ul>
+    );
   };
 
   const confirmarCancelacion = async (id_reserva) => {
@@ -252,7 +253,11 @@ export default function Alumno() {
         </button>
       </div>
 
-      <button className="back-btn" style={{ marginTop: "25px" }} onClick={() => window.history.back()}>
+      <button
+        className="back-btn"
+        style={{ marginTop: "25px" }}
+        onClick={() => window.history.back()}
+      >
         Volver
       </button>
 
