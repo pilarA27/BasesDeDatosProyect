@@ -1,9 +1,7 @@
 from db_config import get_connection
 from datetime import datetime, timedelta
 
-# =====================================
 # HELPER GENERAL
-# =====================================
 def run_query(sql, params=None, fetch=False):
     cn = get_connection()
     try:
@@ -18,9 +16,7 @@ def run_query(sql, params=None, fetch=False):
         cn.close()
 
 
-# =====================================
 # ALUMNOS
-# =====================================
 def alta_alumno(ci, nombre, apellido, email):
     sql = "INSERT INTO alumno (ci, nombre, apellido, email) VALUES (%s, %s, %s, %s)"
     return run_query(sql, (ci, nombre, apellido, email))
@@ -37,9 +33,7 @@ def eliminar_alumno(ci):
     return run_query("DELETE FROM alumno WHERE ci=%s", (ci,))
 
 
-# =====================================
 # SALAS
-# =====================================
 def alta_sala(nombre_sala, id_edificio, capacidad, tipo_sala):
     sql = """
         INSERT INTO sala (nombre_sala, id_edificio, capacidad, tipo_sala)
@@ -70,9 +64,7 @@ def eliminar_sala(id_sala):
     return run_query("DELETE FROM sala WHERE id_sala=%s", (id_sala,))
 
 
-# =====================================
 # RESERVAS
-# =====================================
 def crear_reserva(id_sala, fecha, id_turno, creado_por):
     sql = """
         INSERT INTO reserva (id_sala, fecha, id_turno, creado_por)
@@ -137,9 +129,7 @@ def listar_reservas():
     return reservas
 
 
-# =====================================
 # ASISTENCIA
-# =====================================
 def registrar_asistencia(id_reserva, ci):
     sql = """
         UPDATE reserva_alumno
@@ -181,9 +171,7 @@ def cerrar_reserva(id_reserva):
     return True
 
 
-# =====================================
 # TURNOS
-# =====================================
 def listar_turnos():
     cn = get_connection()
     try:
@@ -217,9 +205,7 @@ def listar_turnos():
         cn.close()
 
 
-# =====================================
 # SANCIONES
-# =====================================
 def listar_sanciones():
     sql = """
         SELECT 

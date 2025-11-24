@@ -213,8 +213,7 @@ export default function Administrador() {
   }
 
   /*
-            MENÚ PRINCIPAL
-*/
+  MENÚ PRINCIPAL*/
   return (
     <div className="admin-container">
       <h1>Administración</h1>

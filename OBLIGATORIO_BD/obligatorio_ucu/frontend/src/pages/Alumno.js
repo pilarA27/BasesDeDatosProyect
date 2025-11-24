@@ -16,9 +16,6 @@ export default function Alumno() {
     onConfirm: null,
   });
 
-  // -------------------------
-  // Modal helpers
-  // -------------------------
   const openModal = (title, content = null, showInput = false, onConfirm = null) => {
     setModal({
       open: true,
@@ -41,9 +38,7 @@ export default function Alumno() {
     });
   };
 
-  // -------------------------
-  // Fecha linda en español
-  // -------------------------
+  //  en español
   const meses = {
     "01": "enero", "02": "febrero", "03": "marzo",
     "04": "abril", "05": "mayo", "06": "junio",
@@ -56,9 +51,7 @@ export default function Alumno() {
     return `${d} de ${meses[m]} de ${a}`;
   }
 
-  // -------------------------
   // CARGA INICIAL
-  // -------------------------
   useEffect(() => {
     fetch("http://localhost:5000/api/salas")
       .then((res) => res.json())
@@ -86,9 +79,7 @@ export default function Alumno() {
     }
   };
 
-  // -------------------------
   // RESERVAR
-  // -------------------------
   const handleReservar = () => {
     openModal(
       "Elegí una sala",
@@ -178,11 +169,9 @@ export default function Alumno() {
     }
   };
 
-  // -------------------------
-  // CANCELAR RESERVA (ARREGLADO!!)
-  // -------------------------
+  // CANCELAR RESERVA 
   const handleCancelar = async () => {
-    await cargarReservas();  // 👈 se espera el fetch REAL
+    await cargarReservas();  
 
     openModal(
       "Elegí la reserva a cancelar",
@@ -220,9 +209,7 @@ export default function Alumno() {
     }
   };
 
-  // -------------------------
   // UI
-  // -------------------------
   return (
     <div className="alumno-container">
       <h1>Reserva tu sala</h1>
