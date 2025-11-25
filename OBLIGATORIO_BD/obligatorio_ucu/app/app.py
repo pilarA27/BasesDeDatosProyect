@@ -144,18 +144,27 @@ def api_turnos_disponibles():
     sql = """
         SELECT 
             t.id_turno, t.hora_inicio, t.hora_fin,
-            DAYNAME(t.fecha) AS dia_en_ing
+            DAYNAME(t.fecha) AS dia_en_ing,
+            (s.capacidad - COALESCE(oc.total, 0)) AS cupos_disponibles
         FROM turno t
-        WHERE t.id_sala=%s AND t.fecha=%s AND t.disponible=1
-        AND t.id_turno NOT IN (
-            SELECT id_turno FROM reserva WHERE fecha=%s AND id_sala=%s
-        )
+        JOIN sala s ON s.id_sala = t.id_sala
+        LEFT JOIN (
+            SELECT r.id_turno, COUNT(*) AS total
+            FROM reserva_alumno ra
+            JOIN reserva r ON r.id_reserva = ra.id_reserva
+            WHERE r.estado = 'activa'
+            GROUP BY r.id_turno
+        ) oc ON oc.id_turno = t.id_turno
+        WHERE t.id_sala=%s
+          AND t.fecha=%s
+          AND t.disponible=1
+          AND (s.capacidad - COALESCE(oc.total, 0)) > 0
         ORDER BY t.hora_inicio
     """
 
     cn = get_connection()
     cur = cn.cursor(dictionary=True)
-    cur.execute(sql, (id_sala, fecha, fecha, id_sala))
+    cur.execute(sql, (id_sala, fecha))
     rows = cur.fetchall()
     cn.close()
 
@@ -167,6 +176,7 @@ def api_turnos_disponibles():
     for r in rows:
         r["hora_inicio"] = str(r["hora_inicio"])
         r["hora_fin"] = str(r["hora_fin"])
+        r["cupos_disponibles"] = int(r["cupos_disponibles"])
         r["dia"] = dias_es.get(r["dia_en_ing"], r["dia_en_ing"])
         del r["dia_en_ing"]
 
@@ -188,7 +198,6 @@ def api_crear_reserva():
         data["id_sala"], data["fecha"], data["id_turno"], data["creado_por"]
     )
 
-    agregar_alumno_a_reserva(nuevo_id, data["creado_por"])
     return {"status": "ok", "id_reserva": nuevo_id}, 201
 
 @app.put("/api/reservas/<int:id_reserva>/cancelar")

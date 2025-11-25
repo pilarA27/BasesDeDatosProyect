@@ -74,8 +74,22 @@ def crear_reserva(id_sala, fecha, id_turno, creado_por):
     try:
         cur = cn.cursor()
         cur.execute(sql, (id_sala, fecha, id_turno, creado_por))
+        nuevo_id = cur.lastrowid
+
+        # registrar al creador como participante en la misma transaccion
+        cur.execute(
+            """
+            INSERT INTO reserva_alumno (id_reserva, ci_alumno)
+            VALUES (%s, %s)
+            """,
+            (nuevo_id, creado_por),
+        )
+
         cn.commit()
-        return cur.lastrowid
+        return nuevo_id
+    except Exception:
+        cn.rollback()
+        raise
     finally:
         cn.close()
 

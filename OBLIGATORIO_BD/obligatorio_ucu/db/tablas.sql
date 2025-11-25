@@ -82,7 +82,7 @@ CREATE TABLE reserva (
   estado ENUM('activa','cancelada','sin_asistencia','finalizada') NOT NULL DEFAULT 'activa',
   creado_por VARCHAR(20) NOT NULL,
   creado_ts TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  UNIQUE KEY uniq_slot (id_sala, fecha, id_turno),
+  KEY idx_slot (id_sala, fecha, id_turno),
   FOREIGN KEY (id_sala) REFERENCES sala(id_sala),
   FOREIGN KEY (id_turno) REFERENCES turno(id_turno),
   FOREIGN KEY (creado_por) REFERENCES alumno(ci)
