@@ -1,6 +1,10 @@
+USE ucu_salas;
 DELIMITER $$
 
--- TRIGGERS SOBRE reserva_alumno
+/* ================================================================
+   TRIGGERS SOBRE reserva_alumno
+   ================================================================ */
+
 -- 1) No permitir que un alumno sancionado participe en reservas
 CREATE TRIGGER trg_reserva_alumno_no_sancionado
 BEFORE INSERT ON reserva_alumno
@@ -101,8 +105,10 @@ END$$
 
 
 
+/* ================================================================
+   TRIGGERS SOBRE reserva
+   ================================================================ */
 
- -- TRIGGERS SOBRE reserv
 -- 5) No permitir que un alumno con sanción vigente cree reservas
 CREATE TRIGGER trg_reserva_creador_no_sancionado
 BEFORE INSERT ON reserva
@@ -149,8 +155,6 @@ BEGIN
 END$$
 
 
-
-
 -- 7) Máximo 3 reservas activas por semana en salas de uso libre (por creador)
 CREATE TRIGGER trg_reserva_max_3_semana
 BEFORE INSERT ON reserva
@@ -181,9 +185,8 @@ BEGIN
 END$$
 
 
-
 -- 8) Validar que el tipo de sala sea compatible con el rol del creador
---    - Sala'posgrado: solo alumnos de posgrado o docentes
+--    - Sala posgrado: solo alumnos de posgrado o docentes
 --    - Sala docente: solo docentes
 --    - Sala libre: sin restricción de tipo (ya está cubierta por otros triggers)
 CREATE TRIGGER trg_validar_tipo_sala
@@ -205,6 +208,7 @@ BEGIN
     FROM alumno_programa_academico
     WHERE ci_alumno = NEW.creado_por
     LIMIT 1;
+
     IF v_tipo_sala = 'posgrado'
        AND v_rol = 'alumno'
        AND NEW.creado_por NOT IN (
@@ -228,8 +232,10 @@ END$$
 
 
 
+/* ================================================================
+   TRIGGER DE SANCIÓN AUTOMÁTICA
+   ================================================================ */
 
- -- TRIGGER DE SANCIÓN AUTOMÁTICA
 -- 9) Sancionar automáticamente si la reserva queda en 'sin_asistencia'
 --    y ningún participante registró asistencia
 CREATE TRIGGER trg_sancion_auto
@@ -237,6 +243,7 @@ AFTER UPDATE ON reserva
 FOR EACH ROW
 BEGIN
     DECLARE asistentes INT;
+
     IF NEW.estado = 'sin_asistencia' AND OLD.estado <> 'sin_asistencia' THEN
 
         -- Cantidad de asistentes marcados (asistencia = 1)
@@ -259,5 +266,197 @@ BEGIN
         END IF;
     END IF;
 END$$
+
+
+
+/* ================================================================
+   VALIDACIONES DE DATOS (NO ABM VACÍOS / FORMATOS)
+   ================================================================ */
+
+-- ALUMNO: CI x.xxx.xxx-x, nombre/apellido/email obligatorios, email válido
+
+CREATE TRIGGER trg_alumno_validar_insert
+BEFORE INSERT ON alumno
+FOR EACH ROW
+BEGIN
+    -- CI obligatoria
+    IF NEW.ci IS NULL OR TRIM(NEW.ci) = '' THEN
+        SIGNAL SQLSTATE '45000'
+            SET MESSAGE_TEXT = 'La cédula es obligatoria';
+    END IF;
+
+    -- Formato CI: x.xxx.xxx-x
+    IF NOT (NEW.ci REGEXP '^[0-9]\\.[0-9]{3}\\.[0-9]{3}-[0-9]$') THEN
+        SIGNAL SQLSTATE '45000'
+            SET MESSAGE_TEXT = 'Formato de cédula inválido. Use x.xxx.xxx-x';
+    END IF;
+
+    -- Nombre obligatorio
+    IF NEW.nombre IS NULL OR TRIM(NEW.nombre) = '' THEN
+        SIGNAL SQLSTATE '45000'
+            SET MESSAGE_TEXT = 'El nombre es obligatorio';
+    END IF;
+
+    -- Apellido obligatorio
+    IF NEW.apellido IS NULL OR TRIM(NEW.apellido) = '' THEN
+        SIGNAL SQLSTATE '45000'
+            SET MESSAGE_TEXT = 'El apellido es obligatorio';
+    END IF;
+
+    -- Email obligatorio
+    IF NEW.email IS NULL OR TRIM(NEW.email) = '' THEN
+        SIGNAL SQLSTATE '45000'
+            SET MESSAGE_TEXT = 'El email es obligatorio';
+    END IF;
+
+    -- Formato de email básico
+    IF NOT (NEW.email REGEXP '^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}$') THEN
+        SIGNAL SQLSTATE '45000'
+            SET MESSAGE_TEXT = 'Formato de email inválido';
+    END IF;
+END$$
+
+
+CREATE TRIGGER trg_alumno_validar_update
+BEFORE UPDATE ON alumno
+FOR EACH ROW
+BEGIN
+    -- CI obligatoria
+    IF NEW.ci IS NULL OR TRIM(NEW.ci) = '' THEN
+        SIGNAL SQLSTATE '45000'
+            SET MESSAGE_TEXT = 'La cédula es obligatoria';
+    END IF;
+
+    -- Formato CI: x.xxx.xxx-x
+    IF NOT (NEW.ci REGEXP '^[0-9]\\.[0-9]{3}\\.[0-9]{3}-[0-9]$') THEN
+        SIGNAL SQLSTATE '45000'
+            SET MESSAGE_TEXT = 'Formato de cédula inválido. Use x.xxx.xxx-x';
+    END IF;
+
+    -- Nombre obligatorio
+    IF NEW.nombre IS NULL OR TRIM(NEW.nombre) = '' THEN
+        SIGNAL SQLSTATE '45000'
+            SET MESSAGE_TEXT = 'El nombre es obligatorio';
+    END IF;
+
+    -- Apellido obligatorio
+    IF NEW.apellido IS NULL OR TRIM(NEW.apellido) = '' THEN
+        SIGNAL SQLSTATE '45000'
+            SET MESSAGE_TEXT = 'El apellido es obligatorio';
+    END IF;
+
+    -- Email obligatorio
+    IF NEW.email IS NULL OR TRIM(NEW.email) = '' THEN
+        SIGNAL SQLSTATE '45000'
+            SET MESSAGE_TEXT = 'El email es obligatorio';
+    END IF;
+
+    -- Formato de email básico
+    IF NOT (NEW.email REGEXP '^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}$') THEN
+        SIGNAL SQLSTATE '45000'
+            SET MESSAGE_TEXT = 'Formato de email inválido';
+    END IF;
+END$$
+
+
+
+-- SALA: nombre, edificio, capacidad > 0, tipo_sala válido
+
+CREATE TRIGGER trg_sala_validar_insert
+BEFORE INSERT ON sala
+FOR EACH ROW
+BEGIN
+    IF NEW.nombre_sala IS NULL OR TRIM(NEW.nombre_sala) = '' THEN
+        SIGNAL SQLSTATE '45000'
+            SET MESSAGE_TEXT = 'El nombre de la sala es obligatorio';
+    END IF;
+
+    IF NEW.id_edificio IS NULL THEN
+        SIGNAL SQLSTATE '45000'
+            SET MESSAGE_TEXT = 'El edificio de la sala es obligatorio';
+    END IF;
+
+    IF NEW.capacidad IS NULL OR NEW.capacidad <= 0 THEN
+        SIGNAL SQLSTATE '45000'
+            SET MESSAGE_TEXT = 'La capacidad de la sala debe ser mayor a cero';
+    END IF;
+
+    IF NEW.tipo_sala NOT IN ('libre','posgrado','docente') THEN
+        SIGNAL SQLSTATE '45000'
+            SET MESSAGE_TEXT = 'Tipo de sala inválido';
+    END IF;
+END$$
+
+
+CREATE TRIGGER trg_sala_validar_update
+BEFORE UPDATE ON sala
+FOR EACH ROW
+BEGIN
+    IF NEW.nombre_sala IS NULL OR TRIM(NEW.nombre_sala) = '' THEN
+        SIGNAL SQLSTATE '45000'
+            SET MESSAGE_TEXT = 'El nombre de la sala es obligatorio';
+    END IF;
+
+    IF NEW.id_edificio IS NULL THEN
+        SIGNAL SQLSTATE '45000'
+            SET MESSAGE_TEXT = 'El edificio de la sala es obligatorio';
+    END IF;
+
+    IF NEW.capacidad IS NULL OR NEW.capacidad <= 0 THEN
+        SIGNAL SQLSTATE '45000'
+            SET MESSAGE_TEXT = 'La capacidad de la sala debe ser mayor a cero';
+    END IF;
+
+    IF NEW.tipo_sala NOT IN ('libre','posgrado','docente') THEN
+        SIGNAL SQLSTATE '45000'
+            SET MESSAGE_TEXT = 'Tipo de sala inválido';
+    END IF;
+END$$
+
+
+
+-- EDIFICIO: nombre, dirección y departamento obligatorios
+
+CREATE TRIGGER trg_edificio_validar_insert
+BEFORE INSERT ON edificio
+FOR EACH ROW
+BEGIN
+    IF NEW.nombre_edificio IS NULL OR TRIM(NEW.nombre_edificio) = '' THEN
+        SIGNAL SQLSTATE '45000'
+            SET MESSAGE_TEXT = 'El nombre del edificio es obligatorio';
+    END IF;
+
+    IF NEW.direccion IS NULL OR TRIM(NEW.direccion) = '' THEN
+        SIGNAL SQLSTATE '45000'
+            SET MESSAGE_TEXT = 'La dirección del edificio es obligatoria';
+    END IF;
+
+    IF NEW.departamento IS NULL OR TRIM(NEW.departamento) = '' THEN
+        SIGNAL SQLSTATE '45000'
+            SET MESSAGE_TEXT = 'El departamento del edificio es obligatorio';
+    END IF;
+END$$
+
+
+CREATE TRIGGER trg_edificio_validar_update
+BEFORE UPDATE ON edificio
+FOR EACH ROW
+BEGIN
+    IF NEW.nombre_edificio IS NULL OR TRIM(NEW.nombre_edificio) = '' THEN
+        SIGNAL SQLSTATE '45000'
+            SET MESSAGE_TEXT = 'El nombre del edificio es obligatorio';
+    END IF;
+
+    IF NEW.direccion IS NULL OR TRIM(NEW.direccion) = '' THEN
+        SIGNAL SQLSTATE '45000'
+            SET MESSAGE_TEXT = 'La dirección del edificio es obligatoria';
+    END IF;
+
+    IF NEW.departamento IS NULL OR TRIM(NEW.departamento) = '' THEN
+        SIGNAL SQLSTATE '45000'
+            SET MESSAGE_TEXT = 'El departamento del edificio es obligatorio';
+    END IF;
+END$$
+
 
 DELIMITER ;
