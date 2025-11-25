@@ -144,17 +144,17 @@ export default function Administrador() {
   const [consultaActiva, setConsultaActiva] = useState(null);
 
   const consultas = [
-    "Salas más reservadas",
-    "Turnos más demandados",
-    "Promedio de participantes por sala",
-    "Cantidad de reservas por carrera y facultad",
-    "Porcentaje de ocupación de salas por edificio",
-    "Cantidad de reservas y asistencias de profesores y alumnos (grado y posgrado)",
-    "Cantidad de sanciones para profesores y alumnos (grado y posgrado)",
-    "Porcentaje de reservas efectivamente utilizadas vs. canceladas/no asistidas",
-    "Ranking alumnos más activos",
-    "Ranking de tipo de edificios más utilizados",
-    "Reservas por sala por día de la semana",
+    "1 Salas más reservadas",
+    "2 Turnos más demandados",
+    "3 Promedio de participantes por sala",
+    "4 Cantidad de reservas por carrera y facultad",
+    "5 Porcentaje de ocupación de salas por edificio",
+    "6 Cantidad de reservas y asistencias de profesores y alumnos (grado y posgrado)",
+    "7 Cantidad de sanciones para profesores y alumnos (grado y posgrado)",
+    "8 Porcentaje de reservas efectivamente utilizadas vs. canceladas/no asistidas",
+    "9 Ranking alumnos más activos",
+    "10 Ranking de tipo de edificios más utilizados",
+    "11 Reservas por sala por día de la semana",
   ];
 
   //pantalla bi
