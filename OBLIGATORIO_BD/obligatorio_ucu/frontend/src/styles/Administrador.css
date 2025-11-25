@@ -1,48 +1,60 @@
-/* CONTENEDOR PRINCIPAL */
+/* ================================
+   CONTENEDOR PRINCIPAL ADMIN
+   ================================ */
 .admin-container {
   padding: 20px;
   text-align: center;
+  max-width: 1100px;
+  margin: 0 auto;
 }
 
 .admin-container h1 {
   margin-bottom: 20px;
 }
 
-/* LAYOUT DE SECCIONES */
+/* ================================
+   LAYOUT DE SECCIONES ABM
+   ================================ */
 .admin-row {
   display: flex;
-  flex-direction: row;
+  flex-wrap: wrap;
   justify-content: center;
-  gap: 25px;
-  flex-wrap: nowrap;
+  gap: 20px;
   width: 100%;
 }
 
-/* CAJAS DE BOTONES */
+/* ================================
+   CAJAS DE BOTONES ABM
+   (Alumnos / Salas / Reservas / Sanciones / Volver)
+   ================================ */
 .button-box {
   background: #f7f7f7;
   padding: 15px;
   border-radius: 12px;
-  width: 180px;
+  min-width: 190px;
   text-align: center;
-  box-shadow: 0 0 4px rgba(0,0,0,0.1);
+  box-shadow: 0 0 4px rgba(0, 0, 0, 0.1);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
 }
 
 .button-box div {
   font-weight: bold;
-  margin-bottom: 10px;
+  margin-bottom: 6px;
 }
 
+/* BOTONES ABM (mismo look que Alumno) */
 .button-box button,
 .back-btn {
   width: 100%;
   padding: 10px 0;
-  margin-bottom: 8px;
   border: none;
-  background-color: #234e28;
+  background-color: #234e28; /* mismo verde que Alumno */
   color: white;
   border-radius: 8px;
   cursor: pointer;
+  font-size: 0.9rem;
 }
 
 .button-box button:hover,
@@ -50,14 +62,17 @@
   background-color: #153119;
 }
 
-/* MODAL GENERAL */
+/* ================================
+   MODAL GENERAL (por si lo usás en Admin)
+   Reutiliza el look de Alumno
+   ================================ */
 .modal-overlay {
   position: fixed;
   top: 0;
   left: 0;
   width: 100%;
   height: 100%;
-  background-color: rgba(0,0,0,0.45);
+  background-color: rgba(0, 0, 0, 0.45);
   display: flex;
   justify-content: center;
   align-items: center;
@@ -73,7 +88,7 @@
   animation: fadeIn 0.25s ease-in-out;
 }
 
-/* INPUTS DE LOS FORMULARIOS */
+/* INPUTS DEL MODAL */
 .form-box {
   display: flex;
   flex-direction: column;
@@ -81,7 +96,8 @@
   margin: 15px 0;
 }
 
-.form-box input {
+.form-box input,
+.input {
   padding: 10px;
   border: 1px solid #ccc;
   border-radius: 8px;
@@ -89,16 +105,20 @@
   font-size: 14px;
 }
 
-/* BOTONES DEL MODAL */
-.confirm-btn {
+/* BOTONES DEL MODAL (reutiliza close-btn estilo Alumno) */
+.confirm-btn,
+.close-btn {
   width: 100%;
   padding: 10px;
-  background: #234e28;
-  color: white;
   border: none;
   border-radius: 8px;
   cursor: pointer;
-  margin-top: 15px;
+  margin-top: 10px;
+  color: white;
+}
+
+.confirm-btn {
+  background: #234e28;
 }
 
 .confirm-btn:hover {
@@ -106,34 +126,40 @@
 }
 
 .close-btn {
-  width: 100%;
-  padding: 10px;
   background: #666;
-  color: white;
-  border: none;
-  border-radius: 8px;
-  cursor: pointer;
-  margin-top: 10px;
 }
 
 .close-btn:hover {
   background: #444;
 }
 
-/* LISTADOS (ALUMNOS, SALAS, RESERVAS, ETC.) */
-.list-scroll {
+/* ================================
+   LISTADOS (para cuando reemplaces prompt por listas)
+   ================================ */
+.list-scroll,
+.selector-list {
   max-height: 250px;
   overflow-y: auto;
   text-align: left;
   padding-right: 5px;
+  margin: 15px 0;
 }
 
-.list-item {
+.list-item,
+.selector-list li {
   padding: 8px 0;
   border-bottom: 1px solid #ddd;
+  cursor: pointer;
 }
 
-/* PANTALLA DE CONSULTAS BI */
+.selector-list li:hover {
+  background-color: #f1f5f9;
+}
+
+/* ================================
+   PANTALLA CONSULTAS BI
+   (NO TOCAR LOGICA, SOLO MANTENGO ESTILO)
+   ================================ */
 .consultas-overlay {
   position: fixed;
   top: 0;
@@ -165,7 +191,7 @@
   justify-content: center;
 }
 
-/* BOTONES DE CONSULTAS */
+/* BOTONES DE CONSULTAS BI */
 .consulta-btn {
   padding: 10px 12px;
   background-color: #234e28;

@@ -103,5 +103,5 @@ INSERT INTO reserva_alumno (id_reserva, ci_alumno, asistencia) VALUES
 
 -- SANCIONES 
 INSERT INTO sancion_alumno (ci_alumno, fecha_inicio, fecha_fin, motivo, id_reserva) VALUES
-('7.666.666-6', DATE_SUB(@f, INTERVAL 3 MONTH), DATE_SUB(@f, INTERVAL 1 MONTH), 'Histórica', NULL),
-('5.333.333-3', DATE_SUB(@f, INTERVAL 4 MONTH), DATE_SUB(@f, INTERVAL 2 MONTH), 'Histórica', NULL);
+('7.666.666-6', DATE_SUB(@f, INTERVAL 3 MONTH), DATE_SUB(@f, INTERVAL 1 MONTH), 'Sancion de prueba', NULL),
+('5.333.333-3', DATE_SUB(@f, INTERVAL 4 MONTH), DATE_SUB(@f, INTERVAL 2 MONTH), 'Sancion de prueba', NULL);
