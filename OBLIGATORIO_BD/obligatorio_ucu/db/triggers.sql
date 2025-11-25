@@ -156,7 +156,26 @@ BEGIN
 END$$
 
 
--- 6) Máximo 2 horas por día en salas de uso libre (por creador)
+-- 6) Evitar que la misma persona reserve dos veces el mismo turno (como creador/participante)
+CREATE TRIGGER trg_reserva_turno_unico_por_persona
+BEFORE INSERT ON reserva
+FOR EACH ROW
+BEGIN
+    IF EXISTS (
+        SELECT 1
+        FROM reserva_alumno ra
+        JOIN reserva r ON r.id_reserva = ra.id_reserva
+        WHERE ra.ci_alumno = NEW.creado_por
+          AND r.id_turno = NEW.id_turno
+          AND r.estado = 'activa'
+    ) THEN
+        SIGNAL SQLSTATE '45000'
+            SET MESSAGE_TEXT = 'Ya tenés una reserva activa en este turno';
+    END IF;
+END$$
+
+
+-- 7) Máximo 2 horas por día en salas de uso libre (por creador)
 CREATE TRIGGER trg_reserva_max_2_horas
 BEFORE INSERT ON reserva
 FOR EACH ROW
@@ -185,7 +204,7 @@ BEGIN
 END$$
 
 
--- 7) Máximo 3 reservas activas por semana en salas de uso libre (por creador)
+-- 8) Máximo 3 reservas activas por semana en salas de uso libre (por creador)
 CREATE TRIGGER trg_reserva_max_3_semana
 BEFORE INSERT ON reserva
 FOR EACH ROW

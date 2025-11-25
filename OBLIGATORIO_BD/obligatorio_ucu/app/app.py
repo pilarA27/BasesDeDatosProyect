@@ -194,11 +194,15 @@ def api_listar_reservas():
 def api_crear_reserva():
     data = request.json
 
-    nuevo_id = crear_reserva(
-        data["id_sala"], data["fecha"], data["id_turno"], data["creado_por"]
-    )
-
-    return {"status": "ok", "id_reserva": nuevo_id}, 201
+    try:
+        nuevo_id = crear_reserva(
+            data["id_sala"], data["fecha"], data["id_turno"], data["creado_por"]
+        )
+        return {"status": "ok", "id_reserva": nuevo_id}, 201
+    except Exception as e:
+        # Intentar obtener un mensaje claro del motor SQL
+        msg = getattr(e, "msg", str(e))
+        return {"status": "error", "message": msg}, 400
 
 @app.put("/api/reservas/<int:id_reserva>/cancelar")
 def api_cancelar_reserva(id_reserva):
