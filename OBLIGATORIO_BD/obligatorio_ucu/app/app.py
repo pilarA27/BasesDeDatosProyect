@@ -23,7 +23,7 @@ CORS(app, resources={r"/api/*": {"origins": "*"}})
 # ================================================================
 def generar_turnos_auto():
     cn = get_connection()
-    cur = cn.cursor()
+    cur = cn.cursor(buffered=True)
 
     hoy = date.today()
 
@@ -212,8 +212,14 @@ def api_cancelar_reserva(id_reserva):
 @app.post("/api/reservas/<int:id_reserva>/asistencia")
 def api_asistencia(id_reserva):
     data = request.json
-    registrar_asistencia(id_reserva, data["ci_alumno"])
-    return {"status": "ok"}
+    if not data or not data.get("ci_alumno"):
+        return {"status": "error", "message": "Falta ci_alumno"}, 400
+
+    try:
+        registrar_asistencia(id_reserva, data["ci_alumno"])
+        return {"status": "ok"}
+    except ValueError as e:
+        return {"status": "error", "message": str(e)}, 400
 
 @app.post("/api/reservas/<int:id_reserva>/cerrar")
 def api_cerrar_reserva(id_reserva):
