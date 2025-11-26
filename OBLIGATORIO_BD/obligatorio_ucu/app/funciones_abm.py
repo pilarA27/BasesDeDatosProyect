@@ -74,8 +74,22 @@ def crear_reserva(id_sala, fecha, id_turno, creado_por):
     try:
         cur = cn.cursor()
         cur.execute(sql, (id_sala, fecha, id_turno, creado_por))
+        nuevo_id = cur.lastrowid
+
+        # registrar al creador como participante en la misma transaccion
+        cur.execute(
+            """
+            INSERT INTO reserva_alumno (id_reserva, ci_alumno)
+            VALUES (%s, %s)
+            """,
+            (nuevo_id, creado_por),
+        )
+
         cn.commit()
-        return cur.lastrowid
+        return nuevo_id
+    except Exception:
+        cn.rollback()
+        raise
     finally:
         cn.close()
 
@@ -136,7 +150,13 @@ def registrar_asistencia(id_reserva, ci):
         SET asistencia = 1, checkin_ts = CURRENT_TIMESTAMP
         WHERE id_reserva=%s AND ci_alumno=%s
     """
-    return run_query(sql, (id_reserva, ci))
+    updated = run_query(sql, (id_reserva, ci))
+
+    if updated == 0:
+        # No estaba asociado a la reserva
+        raise ValueError("El alumno no está registrado en esta reserva")
+
+    return True
 
 
 def cerrar_reserva(id_reserva):
@@ -158,6 +178,15 @@ def cerrar_reserva(id_reserva):
             "SELECT ci_alumno FROM reserva_alumno WHERE id_reserva=%s",
             (id_reserva,), fetch=True
         )
+
+        # Si no hay participantes asociados, sancionamos al creador
+        if not alumnos:
+            creador = run_query(
+                "SELECT creado_por FROM reserva WHERE id_reserva=%s",
+                (id_reserva,), fetch=True
+            )
+            if creador:
+                alumnos = [{"ci_alumno": creador[0]["creado_por"]}]
 
         hoy = datetime.today().date()
         fin = hoy + timedelta(days=60)

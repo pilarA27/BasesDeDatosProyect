@@ -161,12 +161,16 @@ export default function Alumno() {
         }),
       });
 
-      if (!res.ok) throw new Error();
+      const payload = await res.json();
+      if (!res.ok) {
+        const msg = payload?.message || "No se pudo crear la reserva.";
+        throw new Error(msg);
+      }
 
       await cargarReservas();
       openModal("Reserva creada", <p>La reserva fue creada correctamente.</p>);
-    } catch {
-      openModal("Error", <p>No se pudo crear la reserva.</p>);
+    } catch (err) {
+      openModal("Error", <p>{err.message}</p>);
     }
   };
 

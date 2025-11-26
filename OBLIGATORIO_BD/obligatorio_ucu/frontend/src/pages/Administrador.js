@@ -271,15 +271,44 @@ export default function Administrador() {
 
   const submitAsistencia = async () => {
     try {
-      await fetch(`${API}/reservas/${formAsistencia.id_reserva}/asistencia`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ci_alumno: formAsistencia.ci_alumno }),
-      });
-      alert("Asistencia registrada");
+      if (!formAsistencia.id_reserva) {
+        throw new Error("Falta ID de reserva");
+      }
+
+      // Si no hay CI => cerrar la reserva como sin asistencia
+      if (!formAsistencia.ci_alumno) {
+        const resCerrar = await fetch(
+          `${API}/reservas/${formAsistencia.id_reserva}/cerrar`,
+          { method: "POST" }
+        );
+        if (!resCerrar.ok) throw new Error("Error al cerrar la reserva");
+        alert("Reserva cerrada (sin asistencia)");
+      } else {
+        // Registrar asistencia para el alumno indicado
+        const res = await fetch(
+          `${API}/reservas/${formAsistencia.id_reserva}/asistencia`,
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ ci_alumno: formAsistencia.ci_alumno }),
+          }
+        );
+        const payload = await res.json();
+        if (!res.ok)
+          throw new Error(payload?.message || "Error al registrar asistencia");
+        // Cerrar la reserva después de registrar asistencia
+        const resCerrar = await fetch(
+          `${API}/reservas/${formAsistencia.id_reserva}/cerrar`,
+          { method: "POST" }
+        );
+        if (!resCerrar.ok) throw new Error("Error al cerrar la reserva");
+        alert("Asistencia registrada y reserva cerrada");
+      }
+
+      await cargarReservas();
       closeModal();
-    } catch {
-      alert("Error al registrar asistencia");
+    } catch (err) {
+      alert(err.message);
     }
   };
 
@@ -428,7 +457,7 @@ export default function Administrador() {
         <div className="button-box">
           <div>Reservas</div>
           <button onClick={handleListarReservas}>Ver todas</button>
-          <button onClick={handleAsistencia}>Confirmar asistencia</button>
+          <button onClick={handleAsistencia}>Confirmar/Cerrar asistencia</button>
         </div>
 
         {/* SANCIONES */}

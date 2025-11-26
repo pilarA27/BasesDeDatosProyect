@@ -2,7 +2,7 @@ USE ucu_salas;
 DELIMITER $$
 
 /* ================================================================
-   TRIGGERS SOBRE reserva_alumno
+TRIGGERS SOBRE reserva_alumno
    ================================================================ */
 
 -- 1) No permitir que un alumno sancionado participe en reservas
@@ -14,7 +14,7 @@ BEGIN
         SELECT 1
         FROM sancion_alumno
         WHERE ci_alumno = NEW.ci_alumno
-          AND CURDATE() BETWEEN fecha_inicio AND fecha_fin
+            AND CURDATE() BETWEEN fecha_inicio AND fecha_fin
     ) THEN
         SIGNAL SQLSTATE '45000'
             SET MESSAGE_TEXT = 'El alumno está sancionado y no puede participar en reservas';
@@ -31,7 +31,7 @@ BEGIN
         SELECT 1
         FROM reserva_alumno
         WHERE id_reserva = NEW.id_reserva
-          AND ci_alumno = NEW.ci_alumno
+            AND ci_alumno = NEW.ci_alumno
     ) THEN
         SIGNAL SQLSTATE '45000'
             SET MESSAGE_TEXT = 'El alumno ya está registrado en esta reserva';
@@ -46,23 +46,26 @@ FOR EACH ROW
 BEGIN
     DECLARE capacidad_max INT;
     DECLARE ocupacion_actual INT;
+    DECLARE v_id_turno INT;
 
     -- Capacidad máxima de la sala asociada a la reserva
-    SELECT s.capacidad
-      INTO capacidad_max
+    SELECT s.capacidad, r.id_turno
+      INTO capacidad_max, v_id_turno
     FROM reserva r
     JOIN sala s ON s.id_sala = r.id_sala
     WHERE r.id_reserva = NEW.id_reserva;
 
-    -- Cantidad actual de participantes en la reserva
+    -- Cantidad actual de participantes en el turno (todas las reservas del turno)
     SELECT COUNT(*)
       INTO ocupacion_actual
-    FROM reserva_alumno
-    WHERE id_reserva = NEW.id_reserva;
+    FROM reserva_alumno ra
+    JOIN reserva r2 ON r2.id_reserva = ra.id_reserva
+    WHERE r2.id_turno = v_id_turno
+      AND r2.estado = 'activa';
 
     IF ocupacion_actual >= capacidad_max THEN
         SIGNAL SQLSTATE '45000'
-            SET MESSAGE_TEXT = 'La sala está llena — capacidad máxima alcanzada';
+            SET MESSAGE_TEXT = 'La sala está llena — capacidad máxima alcanzada para este turno';
     END IF;
 END$$
 
@@ -79,7 +82,7 @@ BEGIN
 
     -- Obtenemos fecha y tipo de sala de la reserva a la que se quiere sumar
     SELECT r.fecha, s.tipo_sala
-      INTO fecha_reserva, tipo
+        INTO fecha_reserva, tipo
     FROM reserva r
     JOIN sala s ON s.id_sala = r.id_sala
     WHERE r.id_reserva = NEW.id_reserva;
@@ -87,14 +90,14 @@ BEGIN
     -- Solo aplicamos la restricción en salas de uso libre
     IF tipo = 'libre' THEN
         SELECT COUNT(*)
-          INTO cant
+            INTO cant
         FROM reserva_alumno ra
         JOIN reserva r2 ON r2.id_reserva = ra.id_reserva
         JOIN sala s2 ON s2.id_sala = r2.id_sala
         WHERE ra.ci_alumno = NEW.ci_alumno
-          AND r2.estado = 'activa'
-          AND s2.tipo_sala = 'libre'
-          AND YEARWEEK(r2.fecha, 1) = YEARWEEK(fecha_reserva, 1);
+            AND r2.estado = 'activa'
+            AND s2.tipo_sala = 'libre'
+            AND YEARWEEK(r2.fecha, 1) = YEARWEEK(fecha_reserva, 1);
 
         IF cant >= 3 THEN
             SIGNAL SQLSTATE '45000'
@@ -106,8 +109,35 @@ END$$
 
 
 /* ================================================================
-   TRIGGERS SOBRE reserva
+    TRIGGERS SOBRE reserva
    ================================================================ */
+
+-- 4bis) Validar que el turno aún tenga cupo antes de crear la reserva
+CREATE TRIGGER trg_reserva_con_cupo
+BEFORE INSERT ON reserva
+FOR EACH ROW
+BEGIN
+    DECLARE capacidad_max INT;
+    DECLARE ocupacion_actual INT;
+
+    SELECT s.capacidad
+      INTO capacidad_max
+    FROM sala s
+    WHERE s.id_sala = NEW.id_sala;
+
+    SELECT COUNT(*)
+      INTO ocupacion_actual
+    FROM reserva_alumno ra
+    JOIN reserva r ON r.id_reserva = ra.id_reserva
+    WHERE r.id_turno = NEW.id_turno
+      AND r.estado = 'activa';
+
+    IF ocupacion_actual >= capacidad_max THEN
+        SIGNAL SQLSTATE '45000'
+            SET MESSAGE_TEXT = 'No quedan cupos en este turno';
+    END IF;
+END$$
+
 
 -- 5) No permitir que un alumno con sanción vigente cree reservas
 CREATE TRIGGER trg_reserva_creador_no_sancionado
@@ -118,7 +148,7 @@ BEGIN
         SELECT 1
         FROM sancion_alumno s
         WHERE s.ci_alumno = NEW.creado_por
-          AND NEW.fecha BETWEEN s.fecha_inicio AND s.fecha_fin
+            AND NEW.fecha BETWEEN s.fecha_inicio AND s.fecha_fin
     ) THEN
         SIGNAL SQLSTATE '45000'
             SET MESSAGE_TEXT = 'No podés crear reservas porque tenés una sanción vigente';
@@ -126,7 +156,26 @@ BEGIN
 END$$
 
 
--- 6) Máximo 2 horas por día en salas de uso libre (por creador)
+-- 6) Evitar que la misma persona reserve dos veces el mismo turno (como creador/participante)
+CREATE TRIGGER trg_reserva_turno_unico_por_persona
+BEFORE INSERT ON reserva
+FOR EACH ROW
+BEGIN
+    IF EXISTS (
+        SELECT 1
+        FROM reserva_alumno ra
+        JOIN reserva r ON r.id_reserva = ra.id_reserva
+        WHERE ra.ci_alumno = NEW.creado_por
+          AND r.id_turno = NEW.id_turno
+          AND r.estado = 'activa'
+    ) THEN
+        SIGNAL SQLSTATE '45000'
+            SET MESSAGE_TEXT = 'Ya tenés una reserva activa en este turno';
+    END IF;
+END$$
+
+
+-- 7) Máximo 2 horas por día en salas de uso libre (por creador)
 CREATE TRIGGER trg_reserva_max_2_horas
 BEFORE INSERT ON reserva
 FOR EACH ROW
@@ -140,12 +189,12 @@ BEGIN
 
     IF tipo = 'libre' THEN
         SELECT COUNT(*)
-          INTO cant
+            INTO cant
         FROM reserva r
         JOIN sala s ON s.id_sala = r.id_sala
         WHERE r.creado_por = NEW.creado_por
-          AND r.fecha      = NEW.fecha
-          AND s.tipo_sala  = 'libre';
+            AND r.fecha      = NEW.fecha
+            AND s.tipo_sala  = 'libre';
 
         IF cant >= 2 THEN
             SIGNAL SQLSTATE '45000'
@@ -155,7 +204,7 @@ BEGIN
 END$$
 
 
--- 7) Máximo 3 reservas activas por semana en salas de uso libre (por creador)
+-- 8) Máximo 3 reservas activas por semana en salas de uso libre (por creador)
 CREATE TRIGGER trg_reserva_max_3_semana
 BEFORE INSERT ON reserva
 FOR EACH ROW
@@ -169,13 +218,13 @@ BEGIN
 
     IF tipo = 'libre' THEN
         SELECT COUNT(*)
-          INTO cant
+            INTO cant
         FROM reserva r
         JOIN sala s ON s.id_sala = r.id_sala
         WHERE r.creado_por = NEW.creado_por
-          AND r.estado     = 'activa'
-          AND s.tipo_sala  = 'libre'
-          AND YEARWEEK(r.fecha, 1) = YEARWEEK(NEW.fecha, 1);
+            AND r.estado     = 'activa'
+            AND s.tipo_sala  = 'libre'
+            AND YEARWEEK(r.fecha, 1) = YEARWEEK(NEW.fecha, 1);
 
         IF cant >= 3 THEN
             SIGNAL SQLSTATE '45000'
@@ -198,32 +247,32 @@ BEGIN
 
     -- Tipo de sala
     SELECT tipo_sala
-      INTO v_tipo_sala
+        INTO v_tipo_sala
     FROM sala
     WHERE id_sala = NEW.id_sala;
 
     -- Rol del creador (alumno / docente) en algún programa
     SELECT rol
-      INTO v_rol
+        INTO v_rol
     FROM alumno_programa_academico
     WHERE ci_alumno = NEW.creado_por
     LIMIT 1;
 
     IF v_tipo_sala = 'posgrado'
-       AND v_rol = 'alumno'
-       AND NEW.creado_por NOT IN (
+        AND v_rol = 'alumno'
+        AND NEW.creado_por NOT IN (
             SELECT ap.ci_alumno
             FROM alumno_programa_academico ap
             JOIN programa_academico pa ON pa.id_programa = ap.id_programa
             WHERE pa.tipo = 'posgrado'
-       )
+        )
     THEN
         SIGNAL SQLSTATE '45000'
             SET MESSAGE_TEXT = 'Solo alumnos de posgrado o docentes pueden usar esta sala de posgrado';
     END IF;
 
     IF v_tipo_sala = 'docente'
-       AND (v_rol IS NULL OR v_rol <> 'docente')
+        AND (v_rol IS NULL OR v_rol <> 'docente')
     THEN
         SIGNAL SQLSTATE '45000'
             SET MESSAGE_TEXT = 'Esta sala es exclusiva de docentes';
@@ -248,19 +297,19 @@ BEGIN
 
         -- Cantidad de asistentes marcados (asistencia = 1)
         SELECT COUNT(*)
-          INTO asistentes
+            INTO asistentes
         FROM reserva_alumno
         WHERE id_reserva = NEW.id_reserva
-          AND asistencia = 1;
+            AND asistencia = 1;
 
         -- Si nadie asistió, sancionamos a todos los participantes de la reserva
         IF asistentes = 0 THEN
             INSERT INTO sancion_alumno (ci_alumno, fecha_inicio, fecha_fin, motivo, id_reserva)
             SELECT ra.ci_alumno,
-                   CURDATE(),
-                   DATE_ADD(CURDATE(), INTERVAL 2 MONTH),
-                   'No asistencia a reserva',
-                   NEW.id_reserva
+                    CURDATE(),
+                    DATE_ADD(CURDATE(), INTERVAL 2 MONTH),
+                    'No asistencia a reserva',
+                    NEW.id_reserva
             FROM reserva_alumno ra
             WHERE ra.id_reserva = NEW.id_reserva;
         END IF;
